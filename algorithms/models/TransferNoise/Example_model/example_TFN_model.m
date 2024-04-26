@@ -70,7 +70,7 @@ siteCoordinates = {bore_ID, 100, 100; 'PRECIP', 100, 100; 'APET', 100, 100; 'Rev
 forcingTransform_Precip = {'transformfunction', 'climateTransform_soilMoistureModels'; ...
                'forcingdata', {'precip','PRECIP';'et','APET'}; ...
                'outputdata', 'drainage'; ...
-               'options', {'SMSC',2,[];'beta',0,'';'k_sat',-inf,'fixed';'alpha',0,'fixed'}};
+               'options', {'SMSC',2,[];'beta',0,'';'k_sat',1,'fixed';'alpha',0,'fixed'}};
            
 % The transformation of the ET is then defined. However because we've already 
 % defined the soil model, we only need to specify the output we require.
@@ -111,7 +111,7 @@ modelLabel = 'Great Western Catchment - no landuse change';
 
 if run7paramModel
     % Build the 7 parameter model.
-    model_7params = HydroSightModel(modelLabel, bore_ID, 'model_TFN', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_7params);
+    model_7params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_7params);
 
     % Set the number of SP-UCI calibration clusters per parameter
     SchemeSetting.ngs = 2*7;    
