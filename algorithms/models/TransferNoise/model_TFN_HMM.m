@@ -159,7 +159,7 @@ classdef model_TFN_HMM < model_TFN
 
         end
 %% Calculate objective function vector. 
-        function [objFn, h_star, colnames, drainage_elevation] = objectiveFunction(params, time_points, obj, varargin)
+        function [objFn_1,objFn_2, h_star1,h_star2, colnames, drainage_elevation] = objectiveFunction(params, time_points, obj, varargin)
 % objectiveFunction calculates the objective function vector. 
 %
 % Syntax:
@@ -261,9 +261,11 @@ classdef model_TFN_HMM < model_TFN
             % Return of there are nan or inf value
             if any(isnan(h_star(:,2)) | isinf(h_star(:,2)))
                 if getLikelihood
-                    objFn = -inf;
+                    objFn_1 = -inf;
+                    objFn_2 = -inf;
                 else
-                    objFn = inf;
+                    objFn_1 = inf;
+                    objFn_2 = inf;
                 end
                 return;
             end
@@ -279,7 +281,8 @@ classdef model_TFN_HMM < model_TFN
             % required because the innovations can only be calculated at
             % time points for which there are observations. 
             if ~obj.variables.doingCalibration
-                objFn = [];
+                objFn_1 = [];
+                objFn_2 = [];
                 return;
             end
             
