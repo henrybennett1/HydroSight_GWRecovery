@@ -147,9 +147,12 @@ classdef model_TFN_HMM < model_TFN
         function obj = model_TFN_HMM(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin)           
             obj = obj@model_TFN(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin{1})
 
-            obj.parameters.noise = rmfield(obj.parameters.noise,'alpha');
-            obj.parameters.noise.alpha_1 = -1;
-            obj.parameters.noise.alpha_2 = -1;
+            obj.parameters = rmfield(obj.parameters,'noise');
+            obj.parameters.noise1 = noise(obsHead(:,1));
+            obj.parameters.noise2 = noise(obsHead(:,1));
+            %obj.parameters.noise = rmfield(obj.parameters.noise,'alpha');
+            %obj.parameters.noise.alpha_1 = -1;
+            %obj.parameters.noise.alpha_2 = -1;
             obj.parameters.datum.d1 = mean(obsHead(:,end));
             obj.parameters.datum.d2 = mean(obsHead(:,end));
             obj.parameters.probabilities.initial_1 = 0.5;
@@ -291,6 +294,7 @@ classdef model_TFN_HMM < model_TFN
                 & obj.inputData.head(:,1) <= time_points(end) );          
             resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
             resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
+            %REPLACE ALPHA_1 with OBJECT.NOISE
             
             % Calculate innovations using residuals from the deterministic components.            
             innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise.alpha_1 .* obj.variables.delta_time );

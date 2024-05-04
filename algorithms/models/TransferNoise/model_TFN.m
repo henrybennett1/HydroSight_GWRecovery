@@ -2297,7 +2297,7 @@ classdef model_TFN < model_abstract
                     params_upperLimit = [params_upperLimit; params_upperLimit_temp]; %#ok<AGROW> 
                     params_lowerLimit = [params_lowerLimit; params_lowerLimit_temp]; %#ok<AGROW> 
                                         
-                else
+                elseif strcmp(currentField, 'noise')
 
                     [params_plausibleUpperLimit, params_plausibleLowerLimit] = getParameters_plausibleLimit(obj);
                     
@@ -2305,6 +2305,21 @@ classdef model_TFN < model_abstract
                     ind = length(params_upperLimit)+1;
                     params_upperLimit = [params_upperLimit; params_plausibleUpperLimit(ind)];                                %#ok<AGROW> 
                     params_lowerLimit = [params_lowerLimit; params_plausibleLowerLimit(ind)];                                %#ok<AGROW> 
+
+%               TO DO: produce maximum and minimum datum levels
+
+                elseif strcmp(currentField, 'datum')
+                    nparams = length(struct2array( obj.parameters.( currentField )));
+                    maxdatum = 1000; %CHANGE BASED ON NEED
+                    params_upperLimit = [params_upperLimit; ones(nparams,1)*maxdatum];                                %#ok<AGROW>
+                    params_lowerLimit = [params_lowerLimit; zeros(nparams,1)];                                %#ok<AGROW> 
+                
+                elseif strcmp(currentField, 'probabilities')
+                    nparams = length(struct2array( obj.parameters.( currentField )));
+                    params_upperLimit = [params_upperLimit; ones(nparams,1)];                                %#ok<AGROW>
+                    params_lowerLimit = [params_lowerLimit; zeros(nparams,1)];                                %#ok<AGROW> 
+
+
                 end
             end            
         end        
