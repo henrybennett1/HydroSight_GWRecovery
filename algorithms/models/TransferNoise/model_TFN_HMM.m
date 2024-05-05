@@ -145,7 +145,7 @@ classdef model_TFN_HMM < model_TFN
         
 %% Model constructor
         function obj = model_TFN_HMM(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin)           
-            obj = obj@model_TFN(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin{1})
+            obj = obj@model_TFN(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin{1})    %The @ is here for inheritancy, so it will run model_TFN, and then run this
 
             obj.parameters = rmfield(obj.parameters,'noise');
             obj.parameters.noise1 = noise(obsHead(:,1));

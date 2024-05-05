@@ -43,10 +43,11 @@ classdef noise < handle
             params_lowerLimit = obj.params_lowerLimit;
         end
 
-        function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
-        end        
+%        function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
+%            params_upperLimit = obj.params_upperLimit;
+%            params_lowerLimit = obj.params_lowerLimit;
+            %Why 2 copies of the same function
+%        end        
     end
 end
 
