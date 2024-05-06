@@ -6,8 +6,6 @@ classdef probabilities
         initial
         trans_state1
         trans_state2
-        params_upperLimit
-        params_lowerLimit
     end
     
     methods
@@ -15,8 +13,6 @@ classdef probabilities
             obj.initial = initial;
             obj.trans_state1 = trans1;
             obj.trans_state2 = trans2;
-            obj.params_upperLimit = 1;
-            obj.params_lowerLimit = 0;
         end
         
         function [initial1, initial2] = getinitial_probabilities(obj)
@@ -36,8 +32,8 @@ classdef probabilities
             end
         end
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
+            params_upperLimit = 1;
+            params_lowerLimit = 0;
         end
     end
 end

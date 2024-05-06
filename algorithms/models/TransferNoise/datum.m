@@ -11,16 +11,12 @@ classdef datum
     properties
         d1
         d2
-        params_upperLimit
-        params_lowerLimit
     end
     
     methods
         function obj = datum(obs_head,model_shift,datum_shift)
             obj.d1 = min(obs_head) - datum_shift;                               %DEFAULT MODEL
             obj.d2 = min(obs_head) - datum_shift - model_shift;                 %SHIFTED MODEL
-            obj.params_upperLimit = 1000;
-            obj.params_lowerLimit = -1000;
         end
         
         function [d1,d2] = getdatum(obj)
@@ -28,10 +24,9 @@ classdef datum
             d2 = obj.d2;
         end
         
-        function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
-        end
+        %function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
+            %DO WE NEED TO MAKE ONE FOR THESE?
+        %end
     end
 end
 
