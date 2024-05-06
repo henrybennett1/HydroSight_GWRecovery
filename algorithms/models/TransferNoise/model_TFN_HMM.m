@@ -304,16 +304,20 @@ classdef model_TFN_HMM < model_TFN
             objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise.alpha_1 .* obj.variables.delta_time) ))) ...
                     ./(1- exp( -2.*10.^obj.parameters.noise.alpha_1 .* obj.variables.delta_time )) .* innov1.^2;
             objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise.alpha_2 .* obj.variables.delta_time) ))) ...
-                    ./(1- exp( -2.*10.^obj.parameters.noise.alpha_2 .* obj.variables.delta_time )) .* innov2.^2;
+                    ./(1- exp( -2.*10.^obj.parameters.noise.alpha_2 .* obj.variables.delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
   
 %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
             % Calculate log liklihood    
             if getLikelihood
                 N1 = size(resid1,1);
                 N2 = size(resid2,1);
-                objFn_1 = -0.5 * N1 * ( log(2*pi) + log(objFn_1./N1)+1); 
+                objFn_1 = -0.5 * N1 * ( log(2*pi) + log(objFn_1./N1)+1);
                 objFn_2 = -0.5 * N2 * ( log(2*pi) + log(objFn_2./N2)+1);
-            end            
+            end
+        end
+        function [timeseries,integers] = viterbi(obj)
+            timeseries = ;
+            integers = ;    %1 = state 1, 2 = state 2
         end
     end
 end
