@@ -2308,7 +2308,7 @@ classdef model_TFN < model_abstract
 
 %               TO DO: produce maximum and minimum datum levels
 
-                elseif strcmp(currentField, 'datum')
+                elseif strcmp(currentField, 'datum') %CHANGE TO AN OBJECT
                     nparams = length(struct2array( obj.parameters.( currentField )));
                     maxdatum = 1000; %CHANGE BASED ON NEED
                     params_upperLimit = [params_upperLimit; ones(nparams,1)*maxdatum];                                %#ok<AGROW>

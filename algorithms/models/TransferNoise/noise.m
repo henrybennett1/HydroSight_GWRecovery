@@ -38,9 +38,10 @@ classdef noise < handle
             
         end
         
-        function [params_upperLimit, params_lowerLimit] =  getParameters(obj)
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
+        function [params, param_names] = getParameters(obj)
+            params = obj.sigma_n;
+            param_names = {'sigma_n'};
+            %params_lowerLimit = obj.params_lowerLimit;
             %FIX and add to all others
         end
 

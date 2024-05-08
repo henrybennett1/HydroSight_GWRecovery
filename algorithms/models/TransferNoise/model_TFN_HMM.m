@@ -150,13 +150,9 @@ classdef model_TFN_HMM < model_TFN
             obj.parameters = rmfield(obj.parameters,'noise');
             obj.parameters.noise1 = noise(obsHead(:,1));
             obj.parameters.noise2 = noise(obsHead(:,1));
-            %obj.parameters.noise = rmfield(obj.parameters.noise,'alpha');
-            %obj.parameters.noise.alpha_1 = -1;
-            %obj.parameters.noise.alpha_2 = -1;
             obj.parameters.datum.d1 = mean(obsHead(:,end));
             obj.parameters.datum.d2 = mean(obsHead(:,end));
-            obj.parameters.probabilities.initial_1 = 0.5;
-            obj.parameters.probabilities.initial_2 = 0.5;
+            obj.parameters.probabilities.initial = 0.5;
             obj.parameters.probabilities.trans_1 = 0.5;
             obj.parameters.probabilities.trans_2 = 0.5;
 
@@ -316,8 +312,8 @@ classdef model_TFN_HMM < model_TFN
             end
         end
         function [timeseries,integers] = viterbi(obj)
-            timeseries = ;
-            integers = ;    %1 = state 1, 2 = state 2
+            timeseries = [];
+            integers = [];    %1 = state 1, 2 = state 2
         end
     end
 end

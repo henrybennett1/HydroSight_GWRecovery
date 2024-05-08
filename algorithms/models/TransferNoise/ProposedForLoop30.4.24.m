@@ -1,4 +1,5 @@
 %V1
+%Emission probabilities = 1 if no obs value
 %Emission probabilities are the observed likelihoods
 data = ;
 alpha1 = zeros(size(data,1),1);            %Potentially setting size of Alpha

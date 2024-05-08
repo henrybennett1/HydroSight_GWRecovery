@@ -35,9 +35,19 @@ classdef probabilities
                 error("State value not properly defined within bounds");
             end
         end
+        function [params_upperLimit, params_lowerLimit] =  getParameters(obj)      
+            params_upperLimit = obj.params_upperLimit;
+            params_lowerLimit = obj.params_lowerLimit;
+            %FIX
+        end
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
             params_upperLimit = obj.params_upperLimit;
             params_lowerLimit = obj.params_lowerLimit;
+        end
+        function [params_upperLimit, params_lowerLimit] =  getParameters_physicalLimit(obj)
+            params_upperLimit = obj.params_upperLimit;
+            params_lowerLimit = obj.params_lowerLimit;
+            %FIX
         end
     end
 end
