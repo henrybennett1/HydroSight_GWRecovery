@@ -1,4 +1,4 @@
-classdef datum
+classdef datum < handle
     %DATUM Summary of this class goes here
     %   Detailed explanation goes here
     %   datum_shift is the distance from the minimum head value that we
@@ -9,21 +9,39 @@ classdef datum
     %   secondary model that is being made to compare the two states
     
     properties
-        d1
-        d2
+        headDatum
+        params_upperLimit
+        params_lowerLimit
     end
     
     methods
-        function obj = datum(obs_head,model_shift,datum_shift)
-            obj.d1 = min(obs_head) - datum_shift;                               %DEFAULT MODEL
-            obj.d2 = min(obs_head) - datum_shift - model_shift;                 %SHIFTED MODEL
+        function obj = datum(obs_head)
+            obj.headDatum = min(obs_head(:,end));                               %DEFAULT MODEL
+            obj.params_lowerLimit = min(obs_head(:,end)) *0.5;
+            obj.params_upperLimit = max(obs_head(:,end)) *1.5;
+
         end
-        
-        function [d1,d2] = getdatum(obj)
-            d1 = obj.d1;
-            d2 = obj.d2;
+        function [params, param_names] = getParameters(obj)
+            params = obj.headDatum;
+            param_names = {'Head Datum'};
+
         end
-        
+
+        function [d1] = getdatum(obj)
+            d1 = obj.headDatum;
+            
+        end
+        function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
+            params_upperLimit = obj.params_upperLimit;
+            params_lowerLimit = obj.params_lowerLimit;
+        end
+
+        function [params_upperLimit, params_lowerLimit] =  getParameters_physicalLimit(obj)
+            params_upperLimit = obj.params_upperLimit;
+            params_lowerLimit = obj.params_lowerLimit;
+            %FIX and add to all others
+        end        
+
         %function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
             %DO WE NEED TO MAKE ONE FOR THESE?
         %end

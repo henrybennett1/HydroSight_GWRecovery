@@ -150,11 +150,9 @@ classdef model_TFN_HMM < model_TFN
             obj.parameters = rmfield(obj.parameters,'noise');
             obj.parameters.noise1 = noise(obsHead(:,1));
             obj.parameters.noise2 = noise(obsHead(:,1));
-            obj.parameters.datum.d1 = mean(obsHead(:,end));
-            obj.parameters.datum.d2 = mean(obsHead(:,end));
-            obj.parameters.probabilities.initial = 0.5;
-            obj.parameters.probabilities.trans_1 = 0.5;
-            obj.parameters.probabilities.trans_2 = 0.5;
+            obj.parameters.datum1 = datum(obsHead);
+            obj.parameters.datum2 = datum(obsHead);
+            obj.parameters.Tprobs = transitionProbs(0.5,0.5,0.2);
 
         end
 %% Calculate objective function vector. 
