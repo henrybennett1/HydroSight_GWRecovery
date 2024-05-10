@@ -44,7 +44,10 @@ classdef noise < handle
             %params_lowerLimit = obj.params_lowerLimit;
             %FIX and add to all others
         end
+        function setParameters(obj, params)
+            obj.sigma_n = params(1,:);   
 
+        end
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
             params_upperLimit = obj.params_upperLimit;
             params_lowerLimit = obj.params_lowerLimit;
@@ -54,7 +57,13 @@ classdef noise < handle
             params_upperLimit = obj.params_upperLimit;
             params_lowerLimit = obj.params_lowerLimit;
             %FIX and add to all others
-        end        
+        end  
+
+        function isValidParameter = getParameterValidity(obj, params, param_names)
+            [params_upperLimit, params_lowerLimit] = getParameters_physicalLimit(obj);
+            isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
+                    params <= params_upperLimit(:,ones(1,size(params,2)));
+        end
 
     end
 end

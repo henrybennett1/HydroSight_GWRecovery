@@ -26,7 +26,11 @@ classdef datum < handle
             param_names = {'Head Datum'};
 
         end
-
+        function setParameters(obj, params)
+            obj.headDatum = params(1,:);   
+            obj.params_upperLimit = params(1,:);
+            obj.params_lowerLimit = params(1,:);
+        end
         function [d1] = getdatum(obj)
             d1 = obj.headDatum;
             
@@ -41,6 +45,12 @@ classdef datum < handle
             params_lowerLimit = obj.params_lowerLimit;
             %FIX and add to all others
         end        
+        
+        function isValidParameter = getParameterValidity(obj, params, param_names)
+            [params_upperLimit, params_lowerLimit] = getParameters_physicalLimit(obj);
+            isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
+                    params <= params_upperLimit(:,ones(1,size(params,2)));
+        end
 
         %function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
             %DO WE NEED TO MAKE ONE FOR THESE?

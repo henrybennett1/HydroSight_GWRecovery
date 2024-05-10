@@ -592,7 +592,7 @@ function [x,xf, icall] = initialisePopulation(funcHandle, funcHangle_validParams
     %tic;:
     bound = bu_plausible - bl_plausible;
     x=zeros(npt,nopt);
-    parfor i=1:npt
+    for i=1:npt
 
         % Initialise random number generator to a known seed based on the
         % input seed and the iterations

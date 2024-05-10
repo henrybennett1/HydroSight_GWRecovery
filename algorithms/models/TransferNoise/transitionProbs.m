@@ -19,6 +19,11 @@ classdef transitionProbs < handle
             param_names = {'Inital Prob';'Transition State 1'; 'Transition State 2'};
 
         end
+        function setParameters(obj, params)
+            obj.initial = params(1,:);
+            obj.trans_state1 = params(2,:);
+            obj.trans_state2 = params(3,:);
+        end
 
         function [initial1, initial2] = getinitial_probabilities(obj)
             initial1 = obj.initial;
@@ -46,7 +51,13 @@ classdef transitionProbs < handle
             params_upperLimit = [1;1;1];
             params_lowerLimit = [0;0;0];
             
-        end   
+        end 
+        function isValidParameter = getParameterValidity(obj, params, param_names)
+            [params_upperLimit, params_lowerLimit] = getParameters_physicalLimit(obj);
+            isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
+                    params <= params_upperLimit(:,ones(1,size(params,2)));
+        end
+
     end
 end
 
