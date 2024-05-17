@@ -156,7 +156,7 @@ classdef model_TFN_HMM < model_TFN
 
         end
 %% Calculate objective function vector. 
-        function [objFn_1,objFn_2, h_star1,h_star2, colnames, drainage_elevation] = objectiveFunction(params, time_points, obj, varargin)
+function [objFn, h_star, colnames] = objectiveFunction(params, time_points, obj, varargin)
 % objectiveFunction calculates the objective function vector. 
 %
 % Syntax:
@@ -232,11 +232,11 @@ classdef model_TFN_HMM < model_TFN
             % elevation and the mean forcing. Note, these inputs are only
             % to be provided if not doing simulation.
             getLikelihood = false;
-            drainage_elevation=[];
+            %drainage_elevation=[];
             mean_forcing=[];
             if ~isempty(varargin)
                 if isstruct(varargin{1})
-                    drainage_elevation=varargin{1}.drainage_elevation;
+                    %drainage_elevation=varargin{1}.drainage_elevation;
                     mean_forcing=varargin{1}.mean_forcing;
                 elseif islogical(varargin{1})
                     getLikelihood=varargin{1};
@@ -295,22 +295,33 @@ classdef model_TFN_HMM < model_TFN
             innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time );
             
             % Calculate objective function
-            objFn_1 = sum(exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time) ))) ...
-                    ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time )) .* innov1.^2);
+            objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time) ))) ...
+                    ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time )) .* innov1.^2;
             %This has been changed BACK to a sum rather than the individual values, because line 624 of SPUCI.m has 
             % xf(i) = feval(@calibrativeObjectiveFunction, x(i,:)', varargin{:}), and given this depends on the length of 
             % the objective function value and thus needs the output to be 1 value so it doesn't clash with xf(i) which is a single value
-            objFn_2 = sum(exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time) ))) ...
-                    ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time )) .* innov2.^2);    %Von Asmuth 2005 Paper, see Tim's 2014 paper
+            objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time) ))) ...
+                    ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
   
-%%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
-            % Calculate log liklihood    
-            if getLikelihood
-                N1 = size(resid1,1);
-                N2 = size(resid2,1);
-                objFn_1 = -0.5 * N1 * ( log(2*pi) + log(objFn_1./N1)+1);
-                objFn_2 = -0.5 * N2 * ( log(2*pi) + log(objFn_2./N2)+1);
+           
+            %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
+            emissionProbs = [objFn_1'; objFn_2'];
+            alpha = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial]' * emissionProbs(:,1);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
+            scalefactor = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
+            lscale = log(scalefactor);
+            alpha = alpha / scalefactor;        %alpha(1) is reset to 1
+
+            transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
+                obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
+            for i = 2:size(emissionProbs,2)
+                alpha = alpha' * (transProbs * emissionProbs(:,i));        %Dont know where emission probabilities are stored/found?  emission.probs1 is a placeholder for syntax
+                scalefactor = sum(alpha);
+                lscale = lscale + log(scalefactor);
+                alpha = alpha / scalefactor;
+                
             end
+            objFn=lscale;
+
         end
 
 %% VITERBI
@@ -319,7 +330,7 @@ classdef model_TFN_HMM < model_TFN
             integers = [];    %1 = state 1, 2 = state 2
         end
         %% Finalise the model following calibration.
-        function [h_star1,h_star2] = calibration_finalise(obj, params, useLikelihood)            
+        function h_star1 = calibration_finalise(obj, params, useLikelihood)            
 % calibration_finalise finalises the model following calibration.
 %
 % Syntax:
@@ -380,7 +391,7 @@ classdef model_TFN_HMM < model_TFN
             
             % Run objective function to get data and num cols of h_star =
             % in case there's >1 parameter set.
-            [objFn_1(:,1), objFn_2(:,1), h_star_tmp1, h_star_tmp2, ~ , d(1)] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);      %ERROR OCCURING HERE AS drainage elevation = []
+            [objFn_1(:,1), objFn_2(:,1), h_star_tmp1, h_star_tmp2] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);      %ERROR OCCURING HERE AS drainage elevation = []
             %SHOULD DRAINAGE ELEVATION BE SET TO DATUM?
             h_star1 = NaN(length(time_points),2,nparamSets);
             h_star2 = NaN(length(time_points),2,nparamSets);
@@ -427,8 +438,8 @@ classdef model_TFN_HMM < model_TFN
             for j=1:nCompanants
                 obj.variables.(companantNames{j}).forcingMean = forcingMean(j,1:nvars(j),:);
             end
-            obj.variables.d = d;
-            obj.variables.objFn = objFn;
+            %obj.variables.d = d;
+            obj.variables.objFn = objFn_1;
             clear d objFn forcingMean
 
             % Set model parameters (if params are multiple sets)
