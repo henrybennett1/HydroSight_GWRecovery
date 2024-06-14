@@ -302,6 +302,14 @@ function [objFn, h_star, colnames] = objectiveFunction(params, time_points, obj,
             % the objective function value and thus needs the output to be 1 value so it doesn't clash with xf(i) which is a single value
             objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time) ))) ...
                     ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
+            %AT EACH TIME STEP WE HAVE A MODEL ESTIMATE FOR THE MEAN, AND
+            %THE UNCERTAINTY, STDEV, EACH DEFINED BY THE OBJFN, WHERE DOES
+            %OUR OBSERVATION FIT? Fit a smooth curve to a histogram, change
+            %the scale to make the integral 1, to make it a prob
+            %distribution. Where does the observation fit and whats the
+            %probability from that?
+            %This is cycled through each time step
+            %Find a model which has a high probability of giving the observations
   
            
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN

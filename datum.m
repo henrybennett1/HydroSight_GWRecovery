@@ -9,33 +9,28 @@ classdef datum
     %   secondary model that is being made to compare the two states
     
     properties
-        d1
-        d2
+        d
         params_upperLimit
         params_lowerLimit
     end
     
     methods
-        function obj = datum(obs_head,datum_shift)
-            model_shift = ;
-            obj.d1 = min(obs_head) - datum_shift;                               %DEFAULT MODEL
-            obj.d2 = min(obs_head) - datum_shift - model_shift;                 %SHIFTED MODEL
-            obj.params_upperLimit = 1000;
-            obj.params_lowerLimit = -1000;
+        function obj = datum(obs_head)
+            obj.d = min(obs_head(:,end));
+            obj.params_upperLimit = obj.d + 50;
+            obj.params_lowerLimit = obj.d - 50;
             %Datum shift should be defined based on the drainage elevation
             %value that is found in model_TFN line 1868
         end
         
-        function [d1,d2] = getdatum(obj)
-            d1 = obj.d1;
-            d2 = obj.d2;
+        function d = getdatum(obj)
+            d = obj.d;
         end
 
-        %function [params, param_names] = getParameters(obj)
-            %params_upperLimit = obj.params_upperLimit;
-            %params_lowerLimit = obj.params_lowerLimit;
-            %FIX and add to all others
-        %end
+        function [params, param_names] = getParameters(obj)
+            params = getdatum(obj);
+            param_names = {'d'};
+        end
         
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
             params_upperLimit = obj.params_upperLimit;
