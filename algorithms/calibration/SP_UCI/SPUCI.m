@@ -606,7 +606,6 @@ function [x,xf, icall] = initialisePopulation(funcHandle, funcHangle_validParams
             % Check if the parameters are valid
             isValid = feval(funcHangle_validParams, x(i,:)', varargin{:});
 
-            
             if all(isValid)
                 break;
             end

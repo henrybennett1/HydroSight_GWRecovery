@@ -10,15 +10,11 @@ classdef datum
     
     properties
         d
-        params_upperLimit
-        params_lowerLimit
     end
     
     methods
         function obj = datum(obs_head)
             obj.d = min(obs_head(:,end));
-            obj.params_upperLimit = obj.d + 50;
-            obj.params_lowerLimit = obj.d - 50;
             %Datum shift should be defined based on the drainage elevation
             %value that is found in model_TFN line 1868
         end
@@ -33,14 +29,22 @@ classdef datum
         end
         
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
+            params_upperLimit = obj.d + 100;
+            params_lowerLimit = obj.d - 100;
         end
         
         function [params_upperLimit, params_lowerLimit] =  getParameters_physicalLimit(obj)      
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
-        end    
+            params_upperLimit = obj.d + 100;
+            params_lowerLimit = obj.d - 100;
+        end 
+
+        function isValidParameter = getParameterValidity(obj, params, param_names)
+            [params_upperLimit, params_lowerLimit] = getParameters_physicalLimit(obj);
+
+            % Check parameters are within bounds.
+            isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
+    		params <= params_upperLimit(:,ones(1,size(params,2)));
+        end
     end
 end
 
