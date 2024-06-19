@@ -45,6 +45,10 @@ classdef datum
             isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
     		params <= params_upperLimit(:,ones(1,size(params,2)));
         end
+
+        function setParameters(obj, params)
+            obj.d = params(1,:);   
+        end
     end
 end
 

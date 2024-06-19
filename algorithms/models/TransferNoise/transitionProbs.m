@@ -57,7 +57,6 @@ classdef transitionProbs < handle
             isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
                     params <= params_upperLimit(:,ones(1,size(params,2)));
         end
-
     end
 end
 

@@ -5,7 +5,7 @@ classdef noise < handle
     properties
         sigma_n
         params_upperLimit
-        params_lowerLimit
+        params_lowerLimit   %Do we need these values here?
     end
     
     methods
