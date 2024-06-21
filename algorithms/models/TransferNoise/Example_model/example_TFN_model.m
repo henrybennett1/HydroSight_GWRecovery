@@ -115,12 +115,12 @@ if run7paramModel
     model_7params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_7params);
 
     % Set the number of SP-UCI calibration clusters per parameter
-%    SchemeSetting.ngs = 2*7;
-    SchemeSetting.PopSize = 2*13;
+    SchemeSetting.ngs = 2*7;
+    %SchemeSetting.PopSize = 2*13;
     
     % Calibrate the 7 parameter model.
-%    calibrateModel(model_7params, [], 0, inf, 'SP-UCI', SchemeSetting);
-    calibrateModel(model_7params, [], 0, inf, 'CMA-ES', SchemeSetting);
+    calibrateModel(model_7params, [], 0, inf, 'SP-UCI', SchemeSetting);
+    %calibrateModel(model_7params, [], 0, inf, 'CMA-ES', SchemeSetting);
     
     % Plot the calibration results.    
     calibrateModelPlotResults(model_7params,[]);
@@ -130,6 +130,7 @@ if run7paramModel
     newForcingData = [];
     simulationLabel = 'default simulation';
     doKrigingOnResiduals = false;    
+    
     solveModel(model_7params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);    
     solveModelPlotResults(model_7params, simulationLabel, []);    
 end

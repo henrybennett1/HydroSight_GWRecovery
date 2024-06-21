@@ -2088,8 +2088,8 @@ classdef HydroSightModel < handle
             
             % Call model objects to finalise calibration.
             calibration_initialise(obj.model, t_start, t_end);
-            head_est_cal= calibration_finalise(obj.model, params, false );            
-                       
+            head_est_cal= calibration_finalise(obj.model, params, false );
+
             % Add exist status
             [versionNumber,versionDate] = getHydroSightVersion();
             obj.calibrationResults.HydroSight.versionNum = versionNumber;
