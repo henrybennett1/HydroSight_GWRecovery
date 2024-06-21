@@ -314,7 +314,7 @@ function [objFn, h_star, colnames, drainage_elevation] = objectiveFunction(param
            
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
             emissionProbs = [objFn_1'; objFn_2'];
-            alpha = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial]' * emissionProbs(:,1);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
+            alpha = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial] .* emissionProbs(:,1);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
             scalefactor = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
             lscale = log(scalefactor);
             alpha = alpha / scalefactor;        %alpha(1) is reset to 1
@@ -322,15 +322,14 @@ function [objFn, h_star, colnames, drainage_elevation] = objectiveFunction(param
             transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
                 obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
             for i = 2:size(emissionProbs,2)
-                alpha = alpha' * (transProbs * emissionProbs(:,i));        %Dont know where emission probabilities are stored/found?  emission.probs1 is a placeholder for syntax
-                scalefactor = sum(alpha);
-                lscale = lscale + log(scalefactor);
-                alpha = alpha / scalefactor;
-                
+                alpha = (alpha' * transProbs)' .* emissionProbs(:,i);
+                sumalpha = sum(alpha);
+                lscale = lscale + log(sumalpha);
+                alpha = alpha / sum(alpha);
             end
             objFn=lscale;
-
         end
+                        
 
 %% VITERBI
         function [timeseries,integers] = viterbi(obj)
