@@ -480,8 +480,9 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
 
 %% VITERBI
         function [timeseries,integers] = viterbi(obj)
-            timeseries = [];
-            integers = [];    %1 = state 1, 2 = state 2
+            sequence = obj.
+            integers = hmmviterbi(sequence,transProbs,emissionProbs); %1 = state 1, 2 = state 2
+            timeseries = [];    
         end   
     end
 end
