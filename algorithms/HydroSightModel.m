@@ -2109,7 +2109,7 @@ classdef HydroSightModel < handle
 
             % Add calib. obs data and residuals
             if nparamsets>1
-                obj.calibrationResults.data.modelledHead = [head_est_cal(:,1,1), head_est_cal(:, 2,1), permute(prctile( head_est_cal(:, 2,:),[5 95],3),[1,3,2])];                
+                obj.calibrationResults.data.modelledHead = [head_est_cal(:,1,1), head_est_cal(:, 2,1), permute(prctile( head_est_cal(:, 2,:),[5 95],3),[1,3,2])];       %modelledHead Values         
                 obj.calibrationResults.data.modelledNoiseBounds = [head_est_cal(:,1,1), prctile( head_est_cal(:, 3,:),5,3), prctile( head_est_cal(:, 4,:),95,3)];
                 obj.calibrationResults.data.modelledHead_residuals = permute( bsxfun(@minus, single(obsHead(t_filt,2)), single(head_est_cal(:, 2,:))),[1 3 2]);
             else

@@ -31,7 +31,7 @@
 bore_ID = 'ID124705';
 
 if strcmp(bore_ID,'ID124705')
-    load('124705_boreData.mat');
+    load('124705_boreData.mat');    %   HydroSight_GWRecovery\algorithms\models\TransferNoise\Example_model\
 else
     load('124676_boreData.mat');
 end
