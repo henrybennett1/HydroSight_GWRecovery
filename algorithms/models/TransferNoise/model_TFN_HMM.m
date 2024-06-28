@@ -297,7 +297,8 @@ function [objFn, h_star, colnames, drainage_elevation] = objectiveFunction(param
             innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time );
             innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time );
             
-            % Calculate objective function
+            % Calculate objective function (the probability that the model
+            % produces the observed value)
             objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time) ))) ...
                     ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time )) .* innov1.^2;
             %This has been changed BACK to a sum rather than the individual values, because line 624 of SPUCI.m has 
@@ -480,9 +481,14 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
 
 %% VITERBI
         function [timeseries,integers] = viterbi(obj)
-            sequence = obj.
-            integers = hmmviterbi(sequence,transProbs,emissionProbs); %1 = state 1, 2 = state 2
-            timeseries = [];    
+            %emission probs = probability that actual head is produced by model 1 or 2
+            %sequence = obj.
+            %integers = hmmviterbi(sequence,transProbs,emissionProbs); %1 = state 1, 2 = state 2
+            %timeseries = [];
+            
+            %The integers can be used as column integers, where the final
+            %model should take from model 1 when integer = 1 and model 2
+            %when integer = 2
         end   
     end
 end
