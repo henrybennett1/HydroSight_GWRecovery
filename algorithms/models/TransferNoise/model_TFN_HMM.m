@@ -156,7 +156,7 @@ classdef model_TFN_HMM < model_TFN
 
         end
 %% Calculate objective function vector. 
-function [objFn, h_star, colnames, drainage_elevation] = objectiveFunction(params, time_points, obj, varargin)
+function [objFn, h_star1, h_star2, colnames, drainage_elevation, emissionProbs, transProbs] = objectiveFunction(params, time_points, obj, varargin)
 % objectiveFunction calculates the objective function vector. 
 %
 % Syntax:
@@ -325,6 +325,7 @@ function [objFn, h_star, colnames, drainage_elevation] = objectiveFunction(param
 
             transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
                 obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
+
             for i = 2:size(emissionProbs,2)
                 alpha = (alpha' * transProbs)' .* emissionProbs(:,i);
                 sumalpha = sum(alpha);
@@ -395,78 +396,97 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
             
             % Run objective function to get data and num cols of h_star =
             % in case there's >1 parameter set.
-            [objFn(:,1), h_star_tmp, ~ , d(1)] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
-            h_star = NaN(length(time_points),2,nparamSets);     
-            h_star(:,1:2,1) = h_star_tmp(:,1:2);
-            clear h_star_tmp
+            [objFn(:,1), h_star1, h_star2, ~ , d(1),emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
+            
+            noise1 = getNoise(obj.parameters.noise1);
+            noise2 = getNoise(obj.parameters.noise2);
+            
             for j=1:nCompanants
                 nvars(j) = size(obj.variables.(companantNames{j}).forcingData,2);
                 forcingMean(j,1:nvars(j),1) = mean(obj.variables.(companantNames{j}).forcingData,1);
             end
             nvars_max = max(nvars);
-            
-            parfor i=2:nparamSets
-                % Re-calc objective function and deterministic component of the head and innocations.
-                % Importantly, the drainage elevation (ie the constant term for
-                % the regression) is calculated within 'objectiveFunction' and
-                % assigned to the object. When the calibrated model is solved
-                % for a different time period (or climate data) then this
-                % drainage value will be used by 'objectiveFunction'.
-                try
-                    [objFn(:,i), h_star_tmp, ~ , d(i)] = objectiveFunction(params(:,i), time_points, obj,useLikelihood);                        
-                    h_star(:,:,i) = h_star_tmp(:,1:2);
-                catch ME
-                    error(ME.message);
-                end
 
-                % Calculate the mean forcing rates. These mean rates are used
-                % to calculate the contribution from the tail of the theta
-                % weighting beyond the last observation. That is, the theta
-                % function is integrated from the last time point of the
-                % forcing to negative infinity. This integral is then
-                % multiplied by the mean forcing rate. To ensure future
-                % simulations use an identical mean forcing rate, the means are
-                % calculated here and used in all future simulations.
-                for j=1:nCompanants
-                    
-                    forcingMean_tmp = zeros(1,nvars_max);
-                    forcingMean_tmp(1,1:nvars(j)) = mean(obj.variables.(companantNames{j}).forcingData,1); %#ok<PFBNS> getNoise
-                    forcingMean(j,:,i) = forcingMean_tmp;
+            iStates = getViterbi(emissionProbs, transProbs);
+            h_star = NaN(length(time_points),2,nparamSets);
+            noise = NaN(size(noise1));
+            % h_star(:,1:2,1) = h_star_tmp(:,1:2);
+            
+            for i=1:length(iStates)
+                if iStates(i) == 1
+                    h_star(i,:,:) = h_star1(i,:,:);
+                    noise(i,:,:) = noise1(i,:,:);
+                elseif iStates(i) == 2
+                    h_star(i,:,:) = h_star2(i,:,:);
+                    noise(i,:,:) = noise2(i,:,:);
                 end
+                 
             end
+
+            h_star = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
+                h_star(:,2,:) + noise(:,3,:)];
+
+
+
+            
+
+           
+
+            
+            % parfor i=2:nparamSets
+            %     % Re-calc objective function and deterministic component of the head and innocations.
+            %     % Importantly, the drainage elevation (ie the constant term for
+            %     % the regression) is calculated within 'objectiveFunction' and
+            %     % assigned to the object. When the calibrated model is solved
+            %     % for a different time period (or climate data) then this
+            %     % drainage value will be used by 'objectiveFunction'.
+            %     try
+            %         [objFn(:,i), h_star_tmp, ~ , d(i)] = objectiveFunction(params(:,i), time_points, obj,useLikelihood);                        
+            %         h_star(:,:,i) = h_star_tmp(:,1:2);
+            %     catch ME
+            %         error(ME.message);
+            %     end
+            % 
+            %     % Calculate the mean forcing rates. These mean rates are used
+            %     % to calculate the contribution from the tail of the theta
+            %     % weighting beyond the last observation. That is, the theta
+            %     % function is integrated from the last time point of the
+            %     % forcing to negative infinity. This integral is then
+            %     % multiplied by the mean forcing rate. To ensure future
+            %     % simulations use an identical mean forcing rate, the means are
+            %     % calculated here and used in all future simulations.
+            %     for j=1:nCompanants
+            % 
+            %         forcingMean_tmp = zeros(1,nvars_max);
+            %         forcingMean_tmp(1,1:nvars(j)) = mean(obj.variables.(companantNames{j}).forcingData,1); %#ok<PFBNS> getNoise
+            %         forcingMean(j,:,i) = forcingMean_tmp;
+            %     end
+            % end
             for j=1:nCompanants
                 obj.variables.(companantNames{j}).forcingMean = forcingMean(j,1:nvars(j),:);
             end
-            obj.variables.d = d;
+            
+            % obj.variables.d = d;
             obj.variables.objFn = objFn;
             clear d objFn forcingMean
 
             % Set model parameters (if params are multiple sets)
-            if nparamSets>1
-                setParameters(obj, params, obj.variables.param_names);
-            end
+            % if nparamSets>1
+            %     setParameters(obj, params, obj.variables.param_names);
+            % end
 
             t_filt = find( obj.inputData.head(:,1) >=obj.variables.time_points(1)  ...
                 & obj.inputData.head(:,1) <= obj.variables.time_points(end) );
+            
             for i=1:nparamSets                  
                 resid = obj.inputData.head(t_filt,2)  -  h_star(:,2,i);
 
                 % Calculate mean of noise. This should be zero +- eps()
                 % because the drainage value is approximated assuming n-bar = 0.
                 obj.variables.n_bar(i) = real(mean(resid));
-
-                % Calculate innovations
-                innov = resid(2:end) - resid(1:end-1).*exp( -10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time );
-                %innov2 = resid(2:end) - resid(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time );
-
-                % Calculate noise standard deviation.
-                obj.variables.sigma_n(i) = sqrt(mean( innov.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time ))));
             end
-            
-            % Get noise component and omit columns for components.
-            noise = getNoise(obj, time_points);
-            clear time_points
-            h_star = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), h_star(:,2,:) + noise(:,3,:)];
+
+           
             
             % Set a flag to indicate that calibration is complete.
             obj.variables.doingCalibration = false;
@@ -478,6 +498,7 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
                 % continue               
             end
         end        
+       
 
 %% VITERBI
         function [timeseries,integers] = viterbi(obj)

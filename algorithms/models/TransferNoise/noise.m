@@ -6,6 +6,7 @@ classdef noise < handle
         sigma_n
         params_upperLimit
         params_lowerLimit   %Do we need these values here?
+        
     end
     
     methods
@@ -35,6 +36,7 @@ classdef noise < handle
 
             obj.params_upperLimit =  alpha_upperLimit;
             obj.params_lowerLimit = log10(sqrt(eps()))+4;
+            obj.variables.delta_time = delta_time;
             
         end
         
@@ -63,7 +65,30 @@ classdef noise < handle
             isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
                     params <= params_upperLimit(:,ones(1,size(params,2)));
         end
+        function noise = getNoise(obj, time_points, noisePercnile)
 
+            % % Check if there is the noise variable, sigma
+            % if ~isfield(obj.variables,'sigma_n')
+            %     noise = zeros(length(time_points),1);
+            %     return;
+            % end
+
+            % Set percentile for noise
+            if nargin==2
+                noisePercnile = 0.95;
+            else
+                noisePercnile = noisePercnile(1);
+            end
+
+            noise = obj.sigma_n; %repath for each sigma values
+
+            nparamsets = length(noise);
+            if nparamsets>1
+                noise = reshape(noise, 1, 1, nparamsets);
+            end
+            
+            noise = [repmat(time_points,1,1,nparamsets), ones(size(time_points,1),2) .* norminv(noisePercnile,0,1) .* noise];
+        end
     end
 end
 

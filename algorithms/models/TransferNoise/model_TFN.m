@@ -1493,7 +1493,7 @@ classdef model_TFN < model_abstract
 
             noise = obj.variables.sigma_n;
             nparamsets = length(noise);
-            if nparamsets>1
+            if nparamsets>1f
                 noise = reshape(noise, 1, 1, nparamsets);
             end            
 
