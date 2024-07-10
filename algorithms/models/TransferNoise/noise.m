@@ -6,6 +6,7 @@ classdef noise < handle
         sigma_n
         params_upperLimit
         params_lowerLimit   %Do we need these values here?
+        variables
         
     end
     
@@ -77,6 +78,7 @@ classdef noise < handle
             if nargin==2
                 noisePercnile = 0.95;
             else
+                % noisePercnile = 0.95;
                 noisePercnile = noisePercnile(1);
             end
 
@@ -87,7 +89,7 @@ classdef noise < handle
                 noise = reshape(noise, 1, 1, nparamsets);
             end
             
-            noise = [repmat(time_points,1,1,nparamsets), ones(size(time_points,1),2) .* norminv(noisePercnile,0,1) .* noise];
+            noise = [repmat(time_points,1,1,nparamsets), ones(size(time_points,1),2) .* norminv(noisePercnile,0,1).* noise];
         end
     end
 end

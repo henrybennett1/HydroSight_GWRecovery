@@ -501,15 +501,11 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
        
 
 %% VITERBI
-        function [timeseries,integers] = viterbi(obj)
-            %emission probs = probability that actual head is produced by model 1 or 2
-            %sequence = obj.
-            %integers = hmmviterbi(sequence,transProbs,emissionProbs); %1 = state 1, 2 = state 2
-            %timeseries = [];
-            
+        function [timeseries,integers] = getviterbi(obj)
+
             %The integers can be used as column integers, where the final
             %model should take from model 1 when integer = 1 and model 2
             %when integer = 2
-        end   
+        end
     end
 end
