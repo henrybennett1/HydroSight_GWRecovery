@@ -73,13 +73,13 @@ classdef noise < handle
             %     noise = zeros(length(time_points),1);
             %     return;
             % end
-
+            
             % Set percentile for noise
             if nargin==2
                 noisePercnile = 0.95;
             else
-                % noisePercnile = 0.95;
-                noisePercnile = noisePercnile(1);
+                noisePercnile = 0.95;
+                %noisePercnile = noisePercnile(1);
             end
 
             noise = obj.sigma_n; %repath for each sigma values

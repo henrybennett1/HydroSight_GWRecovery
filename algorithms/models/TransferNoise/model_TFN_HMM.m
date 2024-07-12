@@ -385,7 +385,7 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
             setStochForcingState(obj, false, obj.variables.t_start, obj.variables.t_end);
 
             % Initialise data
-            nparamSets = size(params,2);
+            nparamSets = size(params,1);
             objFn = NaN(1,nparamSets);
             d = NaN(1,nparamSets);
             time_points = obj.variables.time_points;
@@ -398,17 +398,19 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
             % in case there's >1 parameter set.
             [objFn(:,1), h_star1, h_star2, ~ , d(1),emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
             
-            noise1 = getNoise(obj.parameters.noise1);
-            noise2 = getNoise(obj.parameters.noise2);
+            noise1 = getNoise(obj.parameters.noise1, time_points);
+            noise2 = getNoise(obj.parameters.noise2, time_points);
             
             for j=1:nCompanants
                 nvars(j) = size(obj.variables.(companantNames{j}).forcingData,2);
                 forcingMean(j,1:nvars(j),1) = mean(obj.variables.(companantNames{j}).forcingData,1);
             end
-            nvars_max = max(nvars);
+            
+            initalProbs = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial];
 
-            iStates = getViterbi(emissionProbs, transProbs);
-            h_star = NaN(length(time_points),2,nparamSets);
+            iStates = model_TFN_HMM.getViterbi( initalProbs, emissionProbs, transProbs);
+
+            h_star = NaN(length(time_points),4,nparamSets);
             noise = NaN(size(noise1));
             % h_star(:,1:2,1) = h_star_tmp(:,1:2);
             
@@ -417,7 +419,7 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
                     h_star(i,:,:) = h_star1(i,:,:);
                     noise(i,:,:) = noise1(i,:,:);
                 elseif iStates(i) == 2
-                    h_star(i,:,:) = h_star2(i,:,:);
+                    h_star(i,:,i) = h_star2(i,:,:);
                     noise(i,:,:) = noise2(i,:,:);
                 end
                  
@@ -497,15 +499,61 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
             catch
                 % continue               
             end
-        end        
-       
+end 
 
-%% VITERBI
-        function [timeseries,integers] = getviterbi(obj)
+    end
+    methods(Static)
+        %% VITERBI
+        function viterbiPath = getViterbi(initialProbs, emissionProbs, transProbs)
+            %need to use the emisison probs and trans probs
+            %time_points = obj.variables.time_points;
+            %transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
+            %    obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
+            %initalProbs = obj.parameters.Tprobs.initial;
 
-            %The integers can be used as column integers, where the final
-            %model should take from model 1 when integer = 1 and model 2
-            %when integer = 2
+            nStates = size(transProbs,1);
+            States = 1:nStates;
+
+            nTrial = size(emissionProbs,2);
+            v = NaN(nStates, nTrial);
+
+            for i = 1:nStates
+                v(i, 1) = log(initialProbs(i) * emissionProbs(i,1));
+            end
+
+            for k = 2:nTrial
+                for i = 1:nStates
+                    maxi = -Inf;
+                    for j = 1:nStates
+                        temp = v(j, k-1) + log(transProbs(j, i));
+                        maxi = max(maxi, temp);
+                    end
+                    v(i, k) = log(emissionProbs(i, k)) + maxi;
+                end
+            end
+
+            viterbiPath = NaN(nTrial, 1);
+            for i = 1:length(States)
+                if max(v(:, nTrial)) == v(i, nTrial)
+                    viterbiPath(nTrial) = States(i);
+                    break
+                end
+            end
+
+            for k = nTrial-1:-1:1
+                for i = 1:length(States)
+                    if max(v(:, k) + log(transProbs(:, viterbiPath(k+1)))) == ...
+                            (v(i, k) + log(transProbs(i, viterbiPath(k+1))))
+                        viterbiPath(k) = States(i);
+                        break
+                    end
+                end
+            end
+            
         end
     end
 end
+       
+       
+
+
