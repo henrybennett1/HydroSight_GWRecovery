@@ -249,7 +249,7 @@ function [objFn, h_star1, h_star2, colnames, drainage_elevation, emissionProbs, 
             if isempty(mean_forcing)
                 [h_star, colnames] = get_h_star(obj, time_points);                 
             else
-                [h_star, colnames] = get_h_star(obj, time_points,mean_forcing);                 
+                [h_star, colnames] = get_h_star(obj, time_points, mean_forcing);                 
             end
 
             % Increment count of function calls
@@ -292,20 +292,24 @@ function [objFn, h_star1, h_star2, colnames, drainage_elevation, emissionProbs, 
             resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
             resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
             %REPLACE ALPHA_1 with OBJECT.NOISE
-            
+            delta_time = [inf;obj.variables.delta_time];
             % Calculate innovations using residuals from the deterministic components.            
-            innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time );
-            innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time );
+            innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.sigma_n .* delta_time(2:end) );
+            innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* delta_time(2:end) );
+            % at first timestep prior contributions is zero
+            innov1 = [resid1(1);innov1];
+            innov2 = [resid2(1);innov2];
             
             % Calculate objective function (the probability that the model
             % produces the observed value)
-            objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time) ))) ...
-                    ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* obj.variables.delta_time )) .* innov1.^2;
+
+            objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time) ))) ...
+                    ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time )) .* innov1.^2;
             %This has been changed BACK to a sum rather than the individual values, because line 624 of SPUCI.m has 
             % xf(i) = feval(@calibrativeObjectiveFunction, x(i,:)', varargin{:}), and given this depends on the length of 
             % the objective function value and thus needs the output to be 1 value so it doesn't clash with xf(i) which is a single value
-            objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time) ))) ...
-                    ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* obj.variables.delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
+            objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time) ))) ...
+                    ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
             %AT EACH TIME STEP WE HAVE A MODEL ESTIMATE FOR THE MEAN, AND
             %THE UNCERTAINTY, STDEV, EACH DEFINED BY THE OBJFN, WHERE DOES
             %OUR OBSERVATION FIT? Fit a smooth curve to a histogram, change
@@ -385,7 +389,7 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
             setStochForcingState(obj, false, obj.variables.t_start, obj.variables.t_end);
 
             % Initialise data
-            nparamSets = size(params,1);
+            nparamSets = size(params,2);
             objFn = NaN(1,nparamSets);
             d = NaN(1,nparamSets);
             time_points = obj.variables.time_points;
@@ -408,18 +412,22 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
             
             initalProbs = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial];
 
-            iStates = model_TFN_HMM.getViterbi( initalProbs, emissionProbs, transProbs);
+            iStates = model_TFN_HMM.getViterbi(initalProbs, emissionProbs, transProbs);
 
-            h_star = NaN(length(time_points),4,nparamSets);
+            h_star = h_star1 .* 0;
             noise = NaN(size(noise1));
             % h_star(:,1:2,1) = h_star_tmp(:,1:2);
             
             for i=1:length(iStates)
                 if iStates(i) == 1
+                    
                     h_star(i,:,:) = h_star1(i,:,:);
+
                     noise(i,:,:) = noise1(i,:,:);
+
                 elseif iStates(i) == 2
-                    h_star(i,:,i) = h_star2(i,:,:);
+                    
+                    h_star(i,:,:) = h_star2(i,:,:);
                     noise(i,:,:) = noise2(i,:,:);
                 end
                  
@@ -499,7 +507,11 @@ function h_star = calibration_finalise(obj, params, useLikelihood)
             catch
                 % continue               
             end
-end 
+        end
+%% Solve Function
+        function [head, colnames, noise] = solve(obj, time_points)
+
+            
 
     end
     methods(Static)
@@ -551,7 +563,9 @@ end
             end
             
         end
+    
     end
+    
 end
        
        

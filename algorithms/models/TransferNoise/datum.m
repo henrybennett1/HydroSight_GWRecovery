@@ -1,4 +1,4 @@
-classdef datum < handle
+classdef datum
     %DATUM Summary of this class goes here
     %   Detailed explanation goes here
     %   datum_shift is the distance from the minimum head value that we
@@ -9,52 +9,46 @@ classdef datum < handle
     %   secondary model that is being made to compare the two states
     
     properties
-        headDatum
-        params_upperLimit
-        params_lowerLimit
+        d
     end
     
     methods
         function obj = datum(obs_head)
-            obj.headDatum = min(obs_head(:,end));                               %DEFAULT MODEL
-            obj.params_lowerLimit = min(obs_head(:,end)) *0.5;
-            obj.params_upperLimit = max(obs_head(:,end)) *1.5;
-
+            obj.d = min(obs_head(:,end));
+            %Datum shift should be defined based on the drainage elevation
+            %value that is found in model_TFN line 1868
         end
-        function [params, param_names] = getParameters(obj)
-            params = obj.headDatum;
-            param_names = {'Head Datum'};
-
-        end
-        function setParameters(obj, params)
-            obj.headDatum = params(1,:);   
-            obj.params_upperLimit = params(1,:);
-            obj.params_lowerLimit = params(1,:);
-        end
-        function [d1] = getdatum(obj)
-            d1 = obj.headDatum;
-            
-        end
-        function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
-        end
-
-        function [params_upperLimit, params_lowerLimit] =  getParameters_physicalLimit(obj)
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
-            %FIX and add to all others
-        end        
         
+        function d = getdatum(obj)
+            d = obj.d;
+        end
+
+        function [params, param_names] = getParameters(obj)
+            params = getdatum(obj);
+            param_names = {'d'};
+        end
+        
+        function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
+            params_upperLimit = obj.d + 100;
+            params_lowerLimit = obj.d - 100;
+        end
+        
+        function [params_upperLimit, params_lowerLimit] =  getParameters_physicalLimit(obj)      
+            params_upperLimit = obj.d + 100;
+            params_lowerLimit = obj.d - 100;
+        end 
+
         function isValidParameter = getParameterValidity(obj, params, param_names)
             [params_upperLimit, params_lowerLimit] = getParameters_physicalLimit(obj);
+
+            % Check parameters are within bounds.
             isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
-                    params <= params_upperLimit(:,ones(1,size(params,2)));
+    		params <= params_upperLimit(:,ones(1,size(params,2)));
         end
 
-        %function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
-            %DO WE NEED TO MAKE ONE FOR THESE?
-        %end
+        function setParameters(obj, params)
+            obj.d = params(1,:);   
+        end
     end
 end
 

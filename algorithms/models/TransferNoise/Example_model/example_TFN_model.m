@@ -107,7 +107,7 @@ maxObsFreq = 7;
 run7paramModel = true;
 run9paramModel = false;
 
-% Define a model lable
+% Define a model label
 modelLabel = 'Great Western Catchment - no landuse change';
 
 if run7paramModel
@@ -115,7 +115,7 @@ if run7paramModel
     model_7params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_7params);
 
     % Set the number of SP-UCI calibration clusters per parameter
-    SchemeSetting.ngs = 5;
+    SchemeSetting.ngs = 4;
     %SchemeSetting.PopSize = 2*13;
     
     % Calibrate the 7 parameter model.
