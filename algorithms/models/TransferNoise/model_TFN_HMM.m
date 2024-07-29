@@ -461,22 +461,23 @@ classdef model_TFN_HMM < model_TFN
             initalProbs = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial];
 
             iStates = model_TFN_HMM.getViterbi(initalProbs, emissionProbs, transProbs);
+            obj.variables.viterbiStates = iStates;
 
             h_star = h_star1 .* 0;
             noise = NaN(size(noise1));
+            displacement_values = NaN(size(noise));
             % h_star(:,1:2,1) = h_star_tmp(:,1:2);
 
             for i=1:length(iStates)
                 if iStates(i) == 1
-
                     h_star(i,:,:) = h_star1(i,:,:);
-
                     noise(i,:,:) = noise1(i,:,:);
+                    displacement_values(i,:,:) = obj.parameters.datum1.d;
 
                 elseif iStates(i) == 2
-
                     h_star(i,:,:) = h_star2(i,:,:);
                     noise(i,:,:) = noise2(i,:,:);
+                    displacement_values(i,:,:) = obj.parameters.datum2.d;
                 end
 
             end
@@ -484,47 +485,11 @@ classdef model_TFN_HMM < model_TFN
             h_star = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
                 h_star(:,2,:) + noise(:,3,:)];
 
-
-
-
-
-
-
-
-            % parfor i=2:nparamSets
-            %     % Re-calc objective function and deterministic component of the head and innocations.
-            %     % Importantly, the drainage elevation (ie the constant term for
-            %     % the regression) is calculated within 'objectiveFunction' and
-            %     % assigned to the object. When the calibrated model is solved
-            %     % for a different time period (or climate data) then this
-            %     % drainage value will be used by 'objectiveFunction'.
-            %     try
-            %         [objFn(:,i), h_star_tmp, ~ , d(i)] = objectiveFunction(params(:,i), time_points, obj,useLikelihood);
-            %         h_star(:,:,i) = h_star_tmp(:,1:2);
-            %     catch ME
-            %         error(ME.message);
-            %     end
-            %
-            %     % Calculate the mean forcing rates. These mean rates are used
-            %     % to calculate the contribution from the tail of the theta
-            %     % weighting beyond the last observation. That is, the theta
-            %     % function is integrated from the last time point of the
-            %     % forcing to negative infinity. This integral is then
-            %     % multiplied by the mean forcing rate. To ensure future
-            %     % simulations use an identical mean forcing rate, the means are
-            %     % calculated here and used in all future simulations.
-            %     for j=1:nCompanants
-            %
-            %         forcingMean_tmp = zeros(1,nvars_max);
-            %         forcingMean_tmp(1,1:nvars(j)) = mean(obj.variables.(companantNames{j}).forcingData,1); %#ok<PFBNS> getNoise
-            %         forcingMean(j,:,i) = forcingMean_tmp;
-            %     end
-            % end
             for j=1:nCompanants
                 obj.variables.(companantNames{j}).forcingMean = forcingMean(j,1:nvars(j),:);
             end
 
-            obj.variables.d = d;
+            obj.variables.d = displacement_values;
             obj.variables.objFn = objFn;
             clear d objFn forcingMean
 
@@ -558,76 +523,52 @@ classdef model_TFN_HMM < model_TFN
         end
         %% Solve Function
         function [head, colnames, noise] = solve(obj, time_points)
-            % Check that the model has first been calibrated.
-            if ~isfield(obj.variables, 'd')
-                error('The model does not appear to have first been calibrated. Please calibrate the model before running a simulation.');
-            end
-
-            % Clear obj.variables of temporary variables.
-            if isfield(obj.variables, 'theta_est_indexes_min'), obj.variables = rmfield(obj.variables, 'theta_est_indexes_min'); end
-            if isfield(obj.variables, 'theta_est_indexes_max'), obj.variables = rmfield(obj.variables, 'theta_est_indexes_max'); end
-
-            % Set a flag to indicate that calibration is NOT being undertaken.
-            % obj.variables.doingCalibration = getInnovations;
-
-            % Setup matrix of indexes for tor at each time_points
-            filt = obj.inputData.forcingData ( : ,1) <= ceil(time_points(end));
-            tor = flipud(transpose(0:time_points(end)  - obj.inputData.forcingData(filt,1)+1));
-            ntor =  size( tor, 1);
-            clear tor;
-
-            obj.variables.theta_est_indexes_min = zeros(1,length(time_points) );
-            obj.variables.theta_est_indexes_max = zeros(1,length(time_points) );
-
-            for ii= 1:length(time_points)
-                ntheta = sum( obj.inputData.forcingData ( : ,1) <= time_points(ii) );
-                obj.variables.theta_est_indexes_min(ii) = ntor-ntheta;
-                obj.variables.theta_est_indexes_max(ii) = max(1,ntor);
-            end
-
-            % Free memory within mex function (just in case there'se been a
-            % prior calibration that crashed prior to clearing the MEX
-            % sttaic variables)
-            % Free memory within mex function
-            try
-                junk=doIRFconvolutionPhi([], [], [], [], false, 0);            %#ok<NASGU>
-            catch
-                % continue
-            end
-
-            % Get the parameter sets (for use in resetting if >sets)
             [params, param_names] = getParameters(obj);
             nparamsets = size(params,2);
 
-            % If the number of parameter sets is >1 then temporarily apply
-            % only the first parameter set. This is done only to reduce the
-            % RAM requirements for the broadcasting of the obj variable in
-            % the following parfor.
-            if nparamsets>1
-                setParameters(obj, params(:,1), param_names);
-            end
-
-            % Solve the modle using each parameter set.
-            obj.variables.delta_time = diff(time_points);
             companants = fieldnames(obj.inputData.componentData);
-            nCompanants = size(companants,1);
+            nCompanants = size(companants,1); 
             for ii=1:nparamsets
                 % Get the calibration estimate of the mean forcing for the
                 % current parameter set. This is a bit of a work around to
                 % handle the issue of each parameter set having a unique
                 % mean forcing (if a forcing transform is undertaken). The
                 % workaround was required when DREAM was addded.
-                for j=1:nCompanants
-                    calibData(ii,1).mean_forcing.(companants{j}) = obj.variables.(companants{j}).forcingMean(:,:,ii); %#ok<AGROW>
+                for j=1:nCompanants                    
+                    calibData(ii,1).mean_forcing.(companants{j}) = obj.variables.(companants{j}).forcingMean(:,:,ii); %#ok<AGROW> 
+                end                
+                              
+                % Add drainage elevation to the varargin variable sent to
+                % objectiveFunction.                
+                calibData(ii,1).drainage_elevation = obj.variables.d(ii);                       
+            end
+            [~, h_star1, h_star2, colnames] = objectiveFunction(params(:,1), time_points, obj,calibData(1)); %Check ~
+            noise1 = getNoise(obj.parameters.noise1, time_points);
+            noise2 = getNoise(obj.parameters.noise2, time_points);
+
+            h_star = h_star1 .* 0;
+            noise = NaN(size(noise1));
+            displacement_values = Nan(size(noise));
+            % h_star(:,1:2,1) = h_star_tmp(:,1:2);
+
+            iStates = obj.variables.viterbiStates;
+
+            for i=1:length(iStates)
+                if iStates(i) == 1
+                    h_star(i,:,:) = h_star1(i,:,:);
+                    noise(i,:,:) = noise1(i,:,:);
+                    displacement_values(i,:,:) = obj.parameters.datum1.d;
+
+                elseif iStates(i) == 2
+                    h_star(i,:,:) = h_star2(i,:,:);
+                    noise(i,:,:) = noise2(i,:,:);
+                    displacement_values(i,:,:) = obj.parameters.datum2.d;
                 end
 
-                % Add drainage elevation to the varargin variable sent to
-                % objectiveFunction.
-                calibData(ii,1).drainage_elevation = obj.variables.d(ii);
             end
 
-            % Solve model and add drainage constants
-            [head, colnames] = get_h_star(obj, time_points); %Issue
+            head = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
+                h_star(:,2,:) + noise(:,3,:)];
 
             if nparamsets>1
                 head = cat(3, head, zeros(size(head,1),size(head,2), nparamsets-1));
@@ -635,9 +576,6 @@ classdef model_TFN_HMM < model_TFN
                     [~, head(:,:,jj)] = objectiveFunction(params(:,jj), time_points, obj, calibData(jj));
                 end
             end
-
-            % Get noise
-            noise = getNoise(obj, time_points);
 
             % Set the parameters if >1 parameter sets
             if nparamsets>1

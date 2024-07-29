@@ -659,7 +659,8 @@ classdef HydroSightModel < handle
            
            % Add columns to output for the noise componant.
            if ~isempty(obj.simulationResults{simInd,1}.noise)
-               h = [obj.simulationResults{simInd,1}.head(:,1:2,:), obj.simulationResults{simInd,1}.head(:,2,:) - obj.simulationResults{simInd,1}.noise(:,2,:), obj.simulationResults{simInd,1}.head(:,2,:) + obj.simulationResults{simInd,1}.noise(:,3,:)];
+               h = [obj.simulationResults{simInd,1}.head(:,1:2,:), obj.simulationResults{simInd,1}.head(:,2,:) - obj.simulationResults{simInd,1}.noise(:,2,:), obj.simulationResults{simInd,1}.head(:,2,:) + obj.simulationResults{simInd,1}.noise(:,3,:)]; %noise is the issue here
+               %the noise in the simulationResults is not properly defined
            else
                h = [obj.simulationResults{simInd,1}.head(:,1:2), zeros(size(obj.simulationResults{simInd,1}.head(:,2),1),2)];
            end
