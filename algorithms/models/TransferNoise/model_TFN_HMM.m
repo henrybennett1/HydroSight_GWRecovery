@@ -328,6 +328,9 @@ classdef model_TFN_HMM < model_TFN
             % summarising calibration results, then exit here. This is
             % required because the innovations can only be calculated at
             % time points for which there are observations.
+
+            % ERROR HERE as Solve Requires objFn output, which is skipped
+            % as its nots in calibration
             if ~obj.variables.doingCalibration
                 objFn_1 = [];
                 objFn_2 = [];
