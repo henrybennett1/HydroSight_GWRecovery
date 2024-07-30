@@ -99,6 +99,10 @@ modelOptions_7params = { 'precip','weightingfunction','responseFunction_Pearsons
                         'et','weightingfunction','derivedweighting_PearsonsNegativeRescaled'; ...
                         'et','inputcomponent','precip'; ...
                         'et','forcingdata',forcingTransform_ET};                    
+
+modelOptions_6params = { 'precip','weightingfunction','responseFunction_Pearsons'; ...
+                        ['precip' ...
+                        ''],'forcingdata',forcingTransform_Precip};                    
                     
 % Set the maximum frequency of water level obs
 maxObsFreq = 7;
@@ -112,27 +116,27 @@ modelLabel = 'Great Western Catchment - no landuse change';
 
 if run7paramModel
     % Build the 7 parameter model.
-    model_7params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_7params);
+    model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
 
     % Set the number of SP-UCI calibration clusters per parameter
     SchemeSetting.ngs = 4;
     %SchemeSetting.PopSize = 2*13;
     
     % Calibrate the 7 parameter model.
-    calibrateModel(model_7params, [], 0, inf, 'SP-UCI', SchemeSetting);
+    calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
     %calibrateModel(model_7params, [], 0, inf, 'CMA-ES', SchemeSetting);
     
     % Plot the calibration results.    
-    calibrateModelPlotResults(model_7params,[]);
+    calibrateModelPlotResults(model_6params,[]);
    
     % Plot the simulation results. 
-    time_points = model_7params.model.variables.time_points;
+    time_points = model_6params.model.variables.time_points;
     newForcingData = [];
     simulationLabel = 'default simulation';
     doKrigingOnResiduals = false;    
     
-    solveModel(model_7params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);    
-    solveModelPlotResults(model_7params, simulationLabel, []);    
+    solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);    
+    solveModelPlotResults(model_6params, simulationLabel, []);    
 end
 
 if run9paramModel

@@ -568,8 +568,9 @@ classdef model_TFN_HMM < model_TFN
 
             end
 
-            head = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
-                h_star(:,2,:) + noise(:,3,:)];
+            %head = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
+            %    h_star(:,2,:) + noise(:,3,:)];
+            head = h_star;
 
             if nparamsets>1
                 head = cat(3, head, zeros(size(head,1),size(head,2), nparamsets-1));
