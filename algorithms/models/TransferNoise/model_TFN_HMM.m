@@ -328,12 +328,10 @@ classdef model_TFN_HMM < model_TFN
             % summarising calibration results, then exit here. This is
             % required because the innovations can only be calculated at
             % time points for which there are observations.
-
-            % ERROR HERE as Solve Requires objFn output, which is skipped
-            % as its nots in calibration
             if ~obj.variables.doingCalibration
-                objFn_1 = [];
-                objFn_2 = [];
+                objFn = [];
+                %objFn_1 = [];
+                %objFn_2 = [];
                 return;
             end
 
@@ -551,7 +549,7 @@ classdef model_TFN_HMM < model_TFN
 
             h_star = h_star1 .* 0;
             noise = NaN(size(noise1));
-            displacement_values = Nan(size(noise));
+            displacement_values = NaN(size(noise));
             % h_star(:,1:2,1) = h_star_tmp(:,1:2);
 
             iStates = obj.variables.viterbiStates;

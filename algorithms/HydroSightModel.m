@@ -958,6 +958,10 @@ classdef HydroSightModel < handle
                    % Set axis labels and title
                    datetick(h, 'x','yy');                   
                    ylabel(h, 'Head change (m)');
+                   % ERROR here as colnames{ii+2} exceeds the limit of 4
+                   % its initially fine, as ii goes from 1+, meaning that
+                   % for ii=1 and ii=2 it works, but on the 3rd loop when
+                   % ii=3, it fails
                    title(h, ['Head contribution from: ', strrep(obj.simulationResults{simInd,1}.colnames{ii+2},'_',' ') ]);
                    xlim(h,dateLimits);                   
                    
