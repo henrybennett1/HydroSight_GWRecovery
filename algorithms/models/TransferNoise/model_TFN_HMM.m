@@ -200,6 +200,7 @@ classdef model_TFN_HMM < model_TFN
             obj.parameters.noise2 = noise(obsHead(:,1));
             obj.parameters.datum1 = datum(obsHead);
             obj.parameters.datum2 = datum(obsHead);
+            obj.parameters.datum2.d = obj.parameters.datum2.d * 0.95;
             obj.parameters.Tprobs = transitionProbs(0.5,0.5,0.2);
 
         end
@@ -450,10 +451,6 @@ classdef model_TFN_HMM < model_TFN
             % Run objective function to get data and num cols of h_star =
             % in case there's >1 parameter set.
             [objFn(:,1), h_star1, h_star2, ~ , d(1),emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
-            % I think I've found the issue here, the objective function
-            % only produces a single datum, not 2, and we don't actually
-            % use the datum that the objective function returns, see line
-            % 479 and 484
             noise1 = getNoise(obj.parameters.noise1, time_points);
             noise2 = getNoise(obj.parameters.noise2, time_points);
 
@@ -483,10 +480,6 @@ classdef model_TFN_HMM < model_TFN
                     noise(i,:,:) = noise2(i,:,:);
                     displacement_values(i,:,:) = obj.parameters.datum2.d;
                 end
-                % Correct this by changing the way that displacement values
-                % is defined, as something dynamic, probably a product of
-                % the objective function? Consider changing the objective
-                % function to produce 2 drainage elevations
             end
 
             h_star = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
