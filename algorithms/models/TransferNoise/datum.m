@@ -1,4 +1,4 @@
-classdef datum
+classdef datum < handle
     %DATUM Summary of this class goes here
     %   Detailed explanation goes here
     %   datum_shift is the distance from the minimum head value that we
@@ -15,6 +15,8 @@ classdef datum
     methods
         function obj = datum(obs_head)
             obj.d = min(obs_head(:,end));
+            % Potentially include a modifier term that changes the datum so
+            % they're different from each other
             %Datum shift should be defined based on the drainage elevation
             %value that is found in model_TFN line 1868
         end
@@ -38,6 +40,10 @@ classdef datum
             params_lowerLimit = obj.d - 100;
         end 
 
+        function setParameters(obj, params)
+            obj.d = params(1,:);   
+        end
+
         function isValidParameter = getParameterValidity(obj, params, param_names)
             [params_upperLimit, params_lowerLimit] = getParameters_physicalLimit(obj);
 
@@ -46,9 +52,7 @@ classdef datum
     		params <= params_upperLimit(:,ones(1,size(params,2)));
         end
 
-        function setParameters(obj, params)
-            obj.d = params(1,:);   
-        end
+
     end
 end
 
