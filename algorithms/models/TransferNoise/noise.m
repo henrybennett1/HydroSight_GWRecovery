@@ -78,8 +78,7 @@ classdef noise < handle
             if nargin==2
                 noisePercnile = 0.95;
             else
-                noisePercnile = 0.95;
-                %noisePercnile = noisePercnile(1);
+                noisePercnile = noisePercnile(1);
             end
 
             noise = obj.sigma_n; %repath for each sigma values
@@ -90,6 +89,8 @@ classdef noise < handle
             end
             
             noise = [repmat(time_points,1,1,nparamsets), ones(size(time_points,1),2) .* norminv(noisePercnile,0,1).* noise];
+            %The noise feels so big because the final calibrated noise
+            %value is being multiplied by the inverse 95th percentile value
         end
     end
 end

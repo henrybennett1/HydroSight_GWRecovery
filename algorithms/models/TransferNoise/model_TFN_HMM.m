@@ -200,7 +200,7 @@ classdef model_TFN_HMM < model_TFN
             obj.parameters.noise2 = noise(obsHead(:,1));
             obj.parameters.datum1 = datum(obsHead);
             obj.parameters.datum2 = datum(obsHead);
-            obj.parameters.datum2.d = obj.parameters.datum2.d * 0.95;
+            %obj.parameters.datum2.d = obj.parameters.datum2.d * 0.95;
             obj.parameters.Tprobs = transitionProbs(0.5,0.5,0.2);
 
         end
@@ -276,23 +276,23 @@ classdef model_TFN_HMM < model_TFN
             % Set model parameters
             setParameters(obj, params, obj.variables.param_names);
 
-            % If varargin is a structural variable then the model
-            % simulation is to use predefined values of the drainage
-            % elevation and the mean forcing. Note, these inputs are only
-            % to be provided if not doing simulation.
-            getLikelihood = false;
-            drainage_elevation=[];
-            mean_forcing=[];
-            if ~isempty(varargin)
-                if isstruct(varargin{1})
-                    drainage_elevation=varargin{1}.drainage_elevation;
-                    mean_forcing=varargin{1}.mean_forcing;
-                elseif islogical(varargin{1})
-                    getLikelihood=varargin{1};
-                else
-                    error('The input varargin must be either a logical or a structural variable.');
-                end
-            end
+            % % If varargin is a structural variable then the model
+            % % simulation is to use predefined values of the drainage
+            % % elevation and the mean forcing. Note, these inputs are only
+            % % to be provided if not doing simulation.
+            % getLikelihood = false;
+             drainage_elevation=[];
+             mean_forcing=[];
+            % if ~isempty(varargin)
+            %     if isstruct(varargin{1})
+            %         drainage_elevation=varargin{1}.drainage_elevation;
+            %         mean_forcing=varargin{1}.mean_forcing;
+            %     elseif islogical(varargin{1})
+            %         getLikelihood=varargin{1};
+            %     else
+            %         error('The input varargin must be either a logical or a structural variable.');
+            %     end
+            % end
 
             % Calc deterministic component of the head.
             if isempty(mean_forcing)
@@ -316,14 +316,17 @@ classdef model_TFN_HMM < model_TFN
                 return;
             end
 
-            if isempty(drainage_elevation)
-                drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
-            end
-
             h_star1 = h_star;
             h_star1(:,2) = h_star(:,2) + obj.parameters.datum1.d;
             h_star2 = h_star;
             h_star2(:,2) = h_star(:,2) + obj.parameters.datum2.d;
+
+            objFn_1 = pdf('Normal', obj.inputData.head(:,2), h_star1(:,2), 10^obj.parameters.noise1.sigma_n);
+            objFn_2 = pdf('Normal', obj.inputData.head(:,2), h_star2(:,2), 10^obj.parameters.noise2.sigma_n);
+            
+            % if isempty(drainage_elevation)
+            %     drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
+            % end
 
             % If the results from this method call are not to be used for
             % summarising calibration results, then exit here. This is
@@ -337,37 +340,40 @@ classdef model_TFN_HMM < model_TFN
             end
 
             % Calculate residual between observed and modelled.
-            t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
-                & obj.inputData.head(:,1) <= time_points(end) );
-            resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
-            resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
-            %REPLACE ALPHA_1 with OBJECT.NOISE
-            delta_time = [inf;obj.variables.delta_time];
-            % Calculate innovations using residuals from the deterministic components.
-            innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.sigma_n .* delta_time(2:end) );
-            innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* delta_time(2:end) );
-            % at first timestep prior contributions is zero
-            innov1 = [resid1(1);innov1];
-            innov2 = [resid2(1);innov2];
+            % t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
+            %     & obj.inputData.head(:,1) <= time_points(end) );
+            % resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
+            % resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
+            % %mean = h1 or h2, stdev = noise
+            % %REPLACE ALPHA_1 with OBJECT.NOISE
+            % delta_time = [inf;obj.variables.delta_time];
+            % % Calculate innovations using residuals from the deterministic components.
+            % innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.sigma_n .* delta_time(2:end) );
+            % innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* delta_time(2:end) );
+            % % at first timestep prior contributions is zero
+            % innov1 = [resid1(1);innov1];
+            % innov2 = [resid2(1);innov2];
+            % 
+            % % Calculate objective function (the probability that the model
+            % % produces the observed value)
+            % 
+            % objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time) ))) ...
+            %     ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time )) .* innov1.^2;
+            % %This has been changed BACK to a sum rather than the individual values, because line 624 of SPUCI.m has
+            % % xf(i) = feval(@calibrativeObjectiveFunction, x(i,:)', varargin{:}), and given this depends on the length of
+            % % the objective function value and thus needs the output to be 1 value so it doesn't clash with xf(i) which is a single value
+            % objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time) ))) ...
+            %     ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
+            % %AT EACH TIME STEP WE HAVE A MODEL ESTIMATE FOR THE MEAN, AND
+            % %THE UNCERTAINTY, STDEV, EACH DEFINED BY THE OBJFN, WHERE DOES
+            % %OUR OBSERVATION FIT? Fit a smooth curve to a histogram, change
+            % %the scale to make the integral 1, to make it a prob
+            % %distribution. Where does the observation fit and whats the
+            % %probability from that?
+            % %This is cycled through each time step
+            % %Find a model which has a high probability of giving the observations
 
-            % Calculate objective function (the probability that the model
-            % produces the observed value)
 
-            objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time) ))) ...
-                ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time )) .* innov1.^2;
-            %This has been changed BACK to a sum rather than the individual values, because line 624 of SPUCI.m has
-            % xf(i) = feval(@calibrativeObjectiveFunction, x(i,:)', varargin{:}), and given this depends on the length of
-            % the objective function value and thus needs the output to be 1 value so it doesn't clash with xf(i) which is a single value
-            objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time) ))) ...
-                ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
-            %AT EACH TIME STEP WE HAVE A MODEL ESTIMATE FOR THE MEAN, AND
-            %THE UNCERTAINTY, STDEV, EACH DEFINED BY THE OBJFN, WHERE DOES
-            %OUR OBSERVATION FIT? Fit a smooth curve to a histogram, change
-            %the scale to make the integral 1, to make it a prob
-            %distribution. Where does the observation fit and whats the
-            %probability from that?
-            %This is cycled through each time step
-            %Find a model which has a high probability of giving the observations
 
 
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
@@ -379,7 +385,7 @@ classdef model_TFN_HMM < model_TFN
 
             transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
                 obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
-
+%Check for NaN values and why?
             for i = 2:size(emissionProbs,2)
                 alpha = (alpha' * transProbs)' .* emissionProbs(:,i);
                 sumalpha = sum(alpha);
@@ -542,6 +548,7 @@ classdef model_TFN_HMM < model_TFN
                 % objectiveFunction.                
                 calibData(ii,1).drainage_elevation = obj.variables.d(ii);                       
             end
+            %ERROR, HEAD IS COMING OUT AS A SINGLE VALUE REPEATED
             [~, h_star1, h_star2, colnames] = objectiveFunction(params(:,1), time_points, obj,calibData(1)); %Check ~
             noise1 = getNoise(obj.parameters.noise1, time_points);
             noise2 = getNoise(obj.parameters.noise2, time_points);
