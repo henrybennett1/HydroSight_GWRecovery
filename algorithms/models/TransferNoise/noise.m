@@ -3,6 +3,7 @@ classdef noise < handle
     %   Detailed explanation goes here
     
     properties
+        alpha
         sigma_n
         params_upperLimit
         params_lowerLimit   %Do we need these values here?
@@ -12,9 +13,7 @@ classdef noise < handle
     
     methods
         function obj = noise(timesteps)
-            %NOISE Construct an instance of this class
-            %   Detailed explanation goes here
-            obj.sigma_n = 0.1;
+            obj.alpha = log10(0.1);
 
             delta_time = diff(timesteps);
 
@@ -42,12 +41,12 @@ classdef noise < handle
         end
         
         function [params, param_names] = getParameters(obj)
-            params = obj.sigma_n;
-            param_names = {'sigma_n'};
+            params = obj.alpha;
+            param_names = {'alpha'};
 
         end
         function setParameters(obj, params)
-            obj.sigma_n = params(1,:);   
+            obj.alpha = params(1,:);   
 
         end
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)

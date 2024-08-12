@@ -200,8 +200,7 @@ classdef model_TFN_HMM < model_TFN
             obj.parameters.noise2 = noise(obsHead(:,1));
             obj.parameters.datum1 = datum(obsHead);
             obj.parameters.datum2 = datum(obsHead);
-            %obj.parameters.datum2.d = obj.parameters.datum2.d * 0.95;
-            obj.parameters.Tprobs = transitionProbs(0.5,0.5,0.2);
+            obj.parameters.Tprobs = transitionProbs(0.6,0.4,0.2);
 
         end
         %% Calculate objective function vector.
@@ -281,24 +280,28 @@ classdef model_TFN_HMM < model_TFN
             % % elevation and the mean forcing. Note, these inputs are only
             % % to be provided if not doing simulation.
             % getLikelihood = false;
-             drainage_elevation=[];
-             mean_forcing=[];
-            % if ~isempty(varargin)
-            %     if isstruct(varargin{1})
-            %         drainage_elevation=varargin{1}.drainage_elevation;
-            %         mean_forcing=varargin{1}.mean_forcing;
-            %     elseif islogical(varargin{1})
-            %         getLikelihood=varargin{1};
-            %     else
-            %         error('The input varargin must be either a logical or a structural variable.');
-            %     end
-            % end
+            drainage_elevation=[];
+            mean_forcing=[];
+            if ~isempty(varargin)
+                if isstruct(varargin{1})
+                    drainage_elevation=varargin{1}.drainage_elevation;
+                    mean_forcing=varargin{1}.mean_forcing;
+                elseif islogical(varargin{1})
+                    getLikelihood=varargin{1};
+                else
+                    error('The input varargin must be either a logical or a structural variable.');
+                end
+            end
 
             % Calc deterministic component of the head.
             if isempty(mean_forcing)
                 [h_star, colnames] = get_h_star(obj, time_points);
             else
                 [h_star, colnames] = get_h_star(obj, time_points, mean_forcing);
+            end
+
+            if isempty(drainage_elevation)
+                drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
             end
 
             % Increment count of function calls
@@ -321,8 +324,8 @@ classdef model_TFN_HMM < model_TFN
             h_star2 = h_star;
             h_star2(:,2) = h_star(:,2) + obj.parameters.datum2.d;
 
-            objFn_1 = pdf('Normal', obj.inputData.head(:,2), h_star1(:,2), 10^obj.parameters.noise1.sigma_n);
-            objFn_2 = pdf('Normal', obj.inputData.head(:,2), h_star2(:,2), 10^obj.parameters.noise2.sigma_n);
+            % objFn_1 = pdf('Normal', obj.inputData.head(:,2), h_star1(:,2), 10^obj.parameters.noise1.sigma_n);
+            % objFn_2 = pdf('Normal', obj.inputData.head(:,2), h_star2(:,2), 10^obj.parameters.noise2.sigma_n);
             
             % if isempty(drainage_elevation)
             %     drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
@@ -339,39 +342,27 @@ classdef model_TFN_HMM < model_TFN
                 return;
             end
 
-            % Calculate residual between observed and modelled.
-            % t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
-            %     & obj.inputData.head(:,1) <= time_points(end) );
-            % resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
-            % resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
-            % %mean = h1 or h2, stdev = noise
-            % %REPLACE ALPHA_1 with OBJECT.NOISE
-            % delta_time = [inf;obj.variables.delta_time];
-            % % Calculate innovations using residuals from the deterministic components.
-            % innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.sigma_n .* delta_time(2:end) );
-            % innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.sigma_n .* delta_time(2:end) );
-            % % at first timestep prior contributions is zero
-            % innov1 = [resid1(1);innov1];
-            % innov2 = [resid2(1);innov2];
-            % 
-            % % Calculate objective function (the probability that the model
-            % % produces the observed value)
-            % 
-            % objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time) ))) ...
-            %     ./(1- exp( -2.*10.^obj.parameters.noise1.sigma_n .* delta_time )) .* innov1.^2;
-            % %This has been changed BACK to a sum rather than the individual values, because line 624 of SPUCI.m has
-            % % xf(i) = feval(@calibrativeObjectiveFunction, x(i,:)', varargin{:}), and given this depends on the length of
-            % % the objective function value and thus needs the output to be 1 value so it doesn't clash with xf(i) which is a single value
-            % objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time) ))) ...
-            %     ./(1- exp( -2.*10.^obj.parameters.noise2.sigma_n .* delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
-            % %AT EACH TIME STEP WE HAVE A MODEL ESTIMATE FOR THE MEAN, AND
-            % %THE UNCERTAINTY, STDEV, EACH DEFINED BY THE OBJFN, WHERE DOES
-            % %OUR OBSERVATION FIT? Fit a smooth curve to a histogram, change
-            % %the scale to make the integral 1, to make it a prob
-            % %distribution. Where does the observation fit and whats the
-            % %probability from that?
-            % %This is cycled through each time step
-            % %Find a model which has a high probability of giving the observations
+            %Calculate residual between observed and modelled.
+            t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
+                & obj.inputData.head(:,1) <= time_points(end) );
+            resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
+            resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
+            %mean = h1 or h2, stdev = noise
+            delta_time = [inf;obj.variables.delta_time];
+            % Calculate innovations using residuals from the deterministic components.
+            innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha .* delta_time(2:end) );
+            innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha .* delta_time(2:end) );
+            % at first timestep prior contributions is zero
+            innov1 = [resid1(1);innov1];
+            innov2 = [resid2(1);innov2];
+
+            % Calculate objective function (the probability that the model
+            % produces the observed value)
+
+            objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time) ))) ...
+                ./(1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time )) .* innov1.^2;
+            objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time) ))) ...
+                ./(1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
 
 
 
@@ -379,20 +370,24 @@ classdef model_TFN_HMM < model_TFN
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
             emissionProbs = [objFn_1'; objFn_2'];
             alpha = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial] .* emissionProbs(:,1);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
-            scalefactor = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
-            lscale = log(scalefactor);
-            alpha = alpha / scalefactor;        %alpha(1) is reset to 1
+            sumalpha = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
+            %lscale = log(sumalpha);
+            objFn = sumalpha;
+            alpha = alpha / sumalpha;        %alpha(1) is reset to 1
 
-            transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
+            transProbs = [1-obj.parameters.Tprobs.trans_state1,obj.parameters.Tprobs.trans_state1;  ...
                 obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
 %Check for NaN values and why?
             for i = 2:size(emissionProbs,2)
                 alpha = (alpha' * transProbs)' .* emissionProbs(:,i);
                 sumalpha = sum(alpha);
-                lscale = lscale + log(sumalpha);
-                alpha = alpha / sum(alpha);
+                %lscale = lscale + log(sumalpha);
+                objFn = objFn + sumalpha;
+                alpha = alpha / sumalpha;
             end
-            objFn=lscale;
+            %objFn=lscale;
+            %objFn_test1 = sum(objFn_1);
+            %objFn_test2 = sum(log(objFn_1));
         end
 
         %% Finalise the model following calibration.
@@ -447,7 +442,7 @@ classdef model_TFN_HMM < model_TFN
             % Initialise data
             nparamSets = size(params,2);
             objFn = NaN(1,nparamSets);
-            d = NaN(1,nparamSets);
+            %d = NaN(1,nparamSets);
             time_points = obj.variables.time_points;
             companantNames = fieldnames(obj.inputData.componentData);
             nCompanants = size(companantNames,1);
@@ -456,7 +451,23 @@ classdef model_TFN_HMM < model_TFN
 
             % Run objective function to get data and num cols of h_star =
             % in case there's >1 parameter set.
-            [objFn(:,1), h_star1, h_star2, ~ , d(1),emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
+            [objFn(:,1), h_star1, h_star2, ~ , ~,emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
+
+            t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
+                & obj.inputData.head(:,1) <= time_points(end) );
+
+            for i=1:nparamSets
+            %Calculate residual between observed and modelled.
+                resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2,i);
+                resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2,i);
+
+                innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time(1:end) );
+                innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time(1:end) );
+                
+                obj.parameters.noise1.sigma_n(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time ))));
+                obj.parameters.noise2.sigma_n(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time ))));
+            end
+
             noise1 = getNoise(obj.parameters.noise1, time_points);
             noise2 = getNoise(obj.parameters.noise2, time_points);
 
@@ -470,7 +481,8 @@ classdef model_TFN_HMM < model_TFN
             iStates = model_TFN_HMM.getViterbi(initalProbs, emissionProbs, transProbs);
             obj.variables.viterbiStates = iStates;
 
-            h_star = h_star1 .* 0;
+            h_star = h_star1;
+            h_star(:,2) = h_star(:,2) .* 0;
             noise = NaN(size(noise1));
             displacement_values = NaN(size(noise));
             % h_star(:,1:2,1) = h_star_tmp(:,1:2);
@@ -504,19 +516,6 @@ classdef model_TFN_HMM < model_TFN
             %     setParameters(obj, params, obj.variables.param_names);
             % end
 
-            t_filt = find( obj.inputData.head(:,1) >=obj.variables.time_points(1)  ...
-                & obj.inputData.head(:,1) <= obj.variables.time_points(end) );
-
-            for i=1:nparamSets
-                resid = obj.inputData.head(t_filt,2)  -  h_star(:,2,i);
-
-                % Calculate mean of noise. This should be zero +- eps()
-                % because the drainage value is approximated assuming n-bar = 0.
-                obj.variables.n_bar(i) = real(mean(resid));
-            end
-
-
-
             % Set a flag to indicate that calibration is complete.
             obj.variables.doingCalibration = false;
 
@@ -546,10 +545,11 @@ classdef model_TFN_HMM < model_TFN
                               
                 % Add drainage elevation to the varargin variable sent to
                 % objectiveFunction.                
-                calibData(ii,1).drainage_elevation = obj.variables.d(ii);                       
+                calibData(ii,1).drainage_elevation = obj.variables.d(ii);  
+                % DRAINAGE ELEVATION ???
             end
             %ERROR, HEAD IS COMING OUT AS A SINGLE VALUE REPEATED
-            [~, h_star1, h_star2, colnames] = objectiveFunction(params(:,1), time_points, obj,calibData(1)); %Check ~
+            [~, h_star1, h_star2, colnames] = objectiveFunction(params(:,1), time_points, obj, calibData(1)); %Check ~
             noise1 = getNoise(obj.parameters.noise1, time_points);
             noise2 = getNoise(obj.parameters.noise2, time_points);
 
@@ -582,6 +582,7 @@ classdef model_TFN_HMM < model_TFN
                 head = cat(3, head, zeros(size(head,1),size(head,2), nparamsets-1));
                 parfor jj=2:size(params,2)
                     [~, head(:,:,jj)] = objectiveFunction(params(:,jj), time_points, obj, calibData(jj));
+                    % THIS IS WRONG, THIS ONLY DRAWS h_star1
                 end
             end
 
@@ -594,30 +595,6 @@ classdef model_TFN_HMM < model_TFN
             obj.variables = rmfield(obj.variables, 'theta_est_indexes_min');
             obj.variables = rmfield(obj.variables, 'theta_est_indexes_max');
 
-        end
-
-        function noise = getNoise(obj, time_points, noisePercnile)
-
-            % Check if there is the noise variable, sigma
-            if ~isfield(obj.variables,'sigma_n')
-                noise = zeros(length(time_points),1);
-                return;
-            end
-
-            % Set percentile for noise
-            if nargin==2
-                noisePercnile = 0.95;
-            else
-                noisePercnile = noisePercnile(1);
-            end
-
-            noise = obj.variables.sigma_n;
-            nparamsets = length(noise);
-            if nparamsets>1
-                noise = reshape(noise, 1, 1, nparamsets);
-            end
-
-            noise = [repmat(time_points,1,1,nparamsets), ones(size(time_points,1),2) .* norminv(noisePercnile,0,1) .* noise];
         end
     end
 end

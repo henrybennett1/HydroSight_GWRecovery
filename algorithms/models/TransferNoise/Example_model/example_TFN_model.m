@@ -108,23 +108,24 @@ modelOptions_6params = { 'precip','weightingfunction','responseFunction_Pearsons
 maxObsFreq = 7;
 
 % Select which model structures to build and calibrate.
-run7paramModel = true;
+run6paramModel = true;
+run7paramModel = false;
 run9paramModel = false;
 
 % Define a model label
 modelLabel = 'Great Western Catchment - no landuse change';
 
-if run7paramModel
-    % Build the 7 parameter model.
+if run6paramModel
+    % Build the 6 parameter model.
     model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
 
     % Set the number of SP-UCI calibration clusters per parameter
     SchemeSetting.ngs = 4;
     %SchemeSetting.PopSize = 2*13;
     
-    % Calibrate the 7 parameter model.
+    % Calibrate the 6 parameter model.
     calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
-    %calibrateModel(model_7params, [], 0, inf, 'CMA-ES', SchemeSetting);
+    %calibrateModel(model_6params, [], 0, inf, 'CMA-ES', SchemeSetting);
     
     % Plot the calibration results.    
     calibrateModelPlotResults(model_6params,[]);
@@ -136,7 +137,32 @@ if run7paramModel
     doKrigingOnResiduals = false;    
     
     solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);    
-    solveModelPlotResults(model_6params, simulationLabel, []);    
+    solveModelPlotResults(model_6params, simulationLabel, []);  
+end
+
+if run7paramModel
+    % Build the 7 parameter model.
+    model_7params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_7params);
+
+    % Set the number of SP-UCI calibration clusters per parameter
+    SchemeSetting.ngs = 4;
+    %SchemeSetting.PopSize = 2*13;
+    
+    % Calibrate the 7 parameter model.
+    calibrateModel(model_7params, [], 0, inf, 'SP-UCI', SchemeSetting);
+    %calibrateModel(model_7params, [], 0, inf, 'CMA-ES', SchemeSetting);
+    
+    % Plot the calibration results.    
+    calibrateModelPlotResults(model_7params,[]);
+   
+    % Plot the simulation results. 
+    time_points = model_7params.model.variables.time_points;
+    newForcingData = [];
+    simulationLabel = 'default simulation';
+    doKrigingOnResiduals = false;    
+      
+    solveModel(model_7params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);    
+    solveModelPlotResults(model_7params, simulationLabel, []);
 end
 
 if run9paramModel

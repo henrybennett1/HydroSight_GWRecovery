@@ -14,6 +14,7 @@ classdef datum < handle
     
     methods
         function obj = datum(obs_head)
+            %obj.d = min(obs_head(:,end)) - 0.1 * abs(min(obs_head(:,end)));
             obj.d = min(obs_head(:,end));
             % Potentially include a modifier term that changes the datum so
             % they're different from each other
