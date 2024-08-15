@@ -368,8 +368,8 @@ classdef model_TFN_HMM < model_TFN
 
 
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
-            emissionProbs = [objFn_1'; objFn_2'];
-            alpha = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial] .* emissionProbs(:,1);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
+            emissionProbs = [objFn_1, objFn_2];
+            alpha = [obj.parameters.Tprobs.initial, 1-obj.parameters.Tprobs.initial] .* emissionProbs(1,:);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
             sumalpha = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
             %lscale = log(sumalpha);
             objFn = sumalpha;
@@ -379,7 +379,7 @@ classdef model_TFN_HMM < model_TFN
                 obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
 %Check for NaN values and why?
             for i = 2:size(emissionProbs,2)
-                alpha = (alpha' * transProbs)' .* emissionProbs(:,i);
+                alpha = (alpha * transProbs) .* emissionProbs(i,:);
                 sumalpha = sum(alpha);
                 %lscale = lscale + log(sumalpha);
                 objFn = objFn + sumalpha;
