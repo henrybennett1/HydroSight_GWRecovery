@@ -10,12 +10,17 @@ classdef datum < handle
     
     properties
         d
+        variables
     end
     
     methods
         function obj = datum(obs_head)
             %obj.d = min(obs_head(:,end)) - 0.1 * abs(min(obs_head(:,end)));
             obj.d = min(obs_head(:,end));
+            obj.variables.upper_phys_d = min(obs_head(:,end))*1.2;
+            obj.variables.lower_phys_d = min(obs_head(:,end))*0.8;
+            obj.variables.upper_plaus_d = min(obs_head(:,end))*1.1;
+            obj.variables.lower_plaus_d = min(obs_head(:,end))*0.9;
             % Potentially include a modifier term that changes the datum so
             % they're different from each other
             %Datum shift should be defined based on the drainage elevation
@@ -32,13 +37,13 @@ classdef datum < handle
         end
         
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)      
-            params_upperLimit = obj.d + 100;
-            params_lowerLimit = obj.d - 100;
+            params_upperLimit = obj.variables.upper_plaus_d;
+            params_lowerLimit = obj.variables.lower_plaus_d;
         end
         
         function [params_upperLimit, params_lowerLimit] =  getParameters_physicalLimit(obj)      
-            params_upperLimit = obj.d + 100;
-            params_lowerLimit = obj.d - 100;
+            params_upperLimit = obj.variables.upper_phys_d;
+            params_lowerLimit = obj.variables.lower_phys_d;
         end 
 
         function setParameters(obj, params)

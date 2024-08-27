@@ -282,6 +282,7 @@ classdef model_TFN_HMM < model_TFN
             % getLikelihood = false;
             drainage_elevation=[];
             mean_forcing=[];
+            getLikelihood = false;
             if ~isempty(varargin)
                 if isstruct(varargin{1})
                     drainage_elevation=varargin{1}.drainage_elevation;
@@ -324,8 +325,8 @@ classdef model_TFN_HMM < model_TFN
             h_star2 = h_star;
             h_star2(:,2) = h_star(:,2) + obj.parameters.datum2.d;
 
-            % objFn_1 = pdf('Normal', obj.inputData.head(:,2), h_star1(:,2), 10^obj.parameters.noise1.sigma_n);
-            % objFn_2 = pdf('Normal', obj.inputData.head(:,2), h_star2(:,2), 10^obj.parameters.noise2.sigma_n);
+            objFn_1 = pdf('Normal', obj.inputData.head(:,2) - h_star1(:,2), 0, 10^obj.parameters.noise1.alpha);
+            objFn_2 = pdf('Normal', obj.inputData.head(:,2) - h_star2(:,2), 0, 10^obj.parameters.noise2.alpha);
             
             % if isempty(drainage_elevation)
             %     drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
@@ -359,19 +360,23 @@ classdef model_TFN_HMM < model_TFN
             % Calculate objective function (the probability that the model
             % produces the observed value)
 
-            objFn_1 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time) ))) ...
-                ./(1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time )) .* innov1.^2;
-            objFn_2 = exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time) ))) ...
-                ./(1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time )) .* innov2.^2;    %Von Asmuth 2005 Paper, see Tim's 2014 paper
-
-
+            % objFn_1 = sum(exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time) ))) ...
+            %     ./(1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time )) .* innov1.^2);
+            % objFn_2 = sum(exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time) ))) ...
+            %     ./(1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time )) .* innov2.^2);    %Von Asmuth 2005 Paper, see Tim's 2014 paper
+            % %
+            % % Calculate log liklihood    
+            % 
+            % N = size(resid1,1);
+            % objFn_1 = -0.5 * N * ( log(2*pi) + log(objFn_1./N)+1);
+            % objFn_2 = -0.5 * N * ( log(2*pi) + log(objFn_2./N)+1);
 
 
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
             emissionProbs = [objFn_1, objFn_2];
             alpha = [obj.parameters.Tprobs.initial, 1-obj.parameters.Tprobs.initial] .* emissionProbs(1,:);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
             sumalpha = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
-            %lscale = log(sumalpha);
+            lscale = log(sumalpha);
             objFn = sumalpha;
             alpha = alpha / sumalpha;        %alpha(1) is reset to 1
 
@@ -381,13 +386,16 @@ classdef model_TFN_HMM < model_TFN
             for i = 2:size(emissionProbs,2)
                 alpha = (alpha * transProbs) .* emissionProbs(i,:);
                 sumalpha = sum(alpha);
-                %lscale = lscale + log(sumalpha);
+                lscale = lscale + log(sumalpha);
                 objFn = objFn + sumalpha;
                 alpha = alpha / sumalpha;
             end
-            %objFn=lscale;
+            objFn=lscale;
             %objFn_test1 = sum(objFn_1);
-            %objFn_test2 = sum(log(objFn_1));
+            if ~isfinite(objFn)
+                objFn = inf;
+            end
+                
         end
 
         %% Finalise the model following calibration.
@@ -464,8 +472,8 @@ classdef model_TFN_HMM < model_TFN
                 innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time(1:end) );
                 innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time(1:end) );
                 
-                obj.parameters.noise1.sigma_n(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time ))));
-                obj.parameters.noise2.sigma_n(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time ))));
+                obj.parameters.noise1.alpha(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time ))));
+                obj.parameters.noise2.alpha(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time ))));
             end
 
             noise1 = getNoise(obj.parameters.noise1, time_points);

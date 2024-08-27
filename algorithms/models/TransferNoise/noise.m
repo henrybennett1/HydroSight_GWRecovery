@@ -13,25 +13,26 @@ classdef noise < handle
     
     methods
         function obj = noise(timesteps)
-            obj.alpha = log10(0.1);
+            obj.alpha = 1;
+            
 
             delta_time = diff(timesteps);
 
             % This parameter is assumed to be the noise parameter 'alpha'.  
-            alpha_upperLimit = 100; 
-            while abs(sum( exp( -2.*alpha_upperLimit .* delta_time ) )) < eps() ...
-            || exp(mean(log( 1- exp( -2.*alpha_upperLimit .* delta_time) ))) < eps()
-                alpha_upperLimit = alpha_upperLimit - 0.01;
-                if alpha_upperLimit <= eps()                                   
-                    break;
-                end
-            end
-            if alpha_upperLimit <= eps()
-                alpha_upperLimit = inf;
-            else
-                % Transform alpha log10 space.
-                alpha_upperLimit = log10(alpha_upperLimit);
-            end                           
+            alpha_upperLimit = 5; 
+            % while abs(sum( exp( -2.*alpha_upperLimit .* delta_time ) )) < eps() ...
+            % || exp(mean(log( 1- exp( -2.*alpha_upperLimit .* delta_time) ))) < eps()
+            %     alpha_upperLimit = alpha_upperLimit - 0.01;
+            %     if alpha_upperLimit <= eps()                                   
+            %         break;
+            %     end
+            % end
+            % if alpha_upperLimit <= eps()
+            %     alpha_upperLimit = inf;
+            % else
+            %     % Transform alpha log10 space.
+            %     alpha_upperLimit = log10(alpha_upperLimit);
+            % end                           
                         
 
             obj.params_upperLimit =  alpha_upperLimit;
@@ -80,7 +81,7 @@ classdef noise < handle
                 noisePercnile = noisePercnile(1);
             end
 
-            noise = obj.sigma_n; %repath for each sigma values
+            noise = obj.alpha; %repath for each sigma values
 
             nparamsets = length(noise);
             if nparamsets>1
