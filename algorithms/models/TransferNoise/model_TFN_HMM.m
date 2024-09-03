@@ -320,13 +320,10 @@ classdef model_TFN_HMM < model_TFN
                 return;
             end
 
-            h_star1 = h_star;
+            h_star1 = h_star(:,1:2);
             h_star1(:,2) = h_star(:,2) + obj.parameters.datum1.d;
-            h_star2 = h_star;
+            h_star2 = h_star(:,1:2);
             h_star2(:,2) = h_star(:,2) + obj.parameters.datum2.d;
-
-            objFn_1 = pdf('Normal', obj.inputData.head(:,2) - h_star1(:,2), 0, 10^obj.parameters.noise1.alpha);
-            objFn_2 = pdf('Normal', obj.inputData.head(:,2) - h_star2(:,2), 0, 10^obj.parameters.noise2.alpha);
             
             % if isempty(drainage_elevation)
             %     drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
@@ -372,6 +369,12 @@ classdef model_TFN_HMM < model_TFN
             % objFn_2 = -0.5 * N * ( log(2*pi) + log(objFn_2./N)+1);
 
 
+            obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
+            obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time )))); 
+            objFn_1 = pdf('Normal', obj.inputData.head(:,2) - h_star1(:,2), 0, obj.parameters.noise1.sigma_n);
+            objFn_2 = pdf('Normal', obj.inputData.head(:,2) - h_star2(:,2), 0, obj.parameters.noise2.sigma_n);
+
+
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
             emissionProbs = [objFn_1, objFn_2];
             alpha = [obj.parameters.Tprobs.initial, 1-obj.parameters.Tprobs.initial] .* emissionProbs(1,:);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
@@ -391,7 +394,6 @@ classdef model_TFN_HMM < model_TFN
                 alpha = alpha / sumalpha;
             end
             objFn=lscale;
-            %objFn_test1 = sum(objFn_1);
             if ~isfinite(objFn)
                 objFn = inf;
             end
@@ -472,8 +474,8 @@ classdef model_TFN_HMM < model_TFN
                 innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time(1:end) );
                 innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time(1:end) );
                 
-                obj.parameters.noise1.alpha(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time ))));
-                obj.parameters.noise2.alpha(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time ))));
+                obj.parameters.noise1.sigma_n(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time ))));
+                obj.parameters.noise2.sigma_n(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time ))));
             end
 
             noise1 = getNoise(obj.parameters.noise1, time_points);
@@ -508,8 +510,8 @@ classdef model_TFN_HMM < model_TFN
                 end
             end
 
-            h_star = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
-                h_star(:,2,:) + noise(:,3,:)];
+            h_star = [h_star(:,1:2,:), h_star(:,1:2,:) - noise(:,2,:), ...
+                h_star(:,1:2,:) + noise(:,3,:)];        %Why noise(:,3,:)
 
             for j=1:nCompanants
                 obj.variables.(companantNames{j}).forcingMean = forcingMean(j,1:nvars(j),:);

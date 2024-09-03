@@ -13,7 +13,7 @@ classdef noise < handle
     
     methods
         function obj = noise(timesteps)
-            obj.alpha = 1;
+            obj.alpha = log10(0.1);
             
 
             delta_time = diff(timesteps);
@@ -67,12 +67,6 @@ classdef noise < handle
                     params <= params_upperLimit(:,ones(1,size(params,2)));
         end
         function noise = getNoise(obj, time_points, noisePercnile)
-
-            % % Check if there is the noise variable, sigma
-            % if ~isfield(obj.variables,'sigma_n')
-            %     noise = zeros(length(time_points),1);
-            %     return;
-            % end
             
             % Set percentile for noise
             if nargin==2
@@ -80,17 +74,16 @@ classdef noise < handle
             else
                 noisePercnile = noisePercnile(1);
             end
-
-            noise = obj.alpha; %repath for each sigma values
+            
+            noise = obj.sigma_n; %repath for each sigma values
 
             nparamsets = length(noise);
             if nparamsets>1
                 noise = reshape(noise, 1, 1, nparamsets);
             end
             
-            noise = [repmat(time_points,1,1,nparamsets), ones(size(time_points,1),2) .* norminv(noisePercnile,0,1).* noise];
-            %The noise feels so big because the final calibrated noise
-            %value is being multiplied by the inverse 95th percentile value
+            noise = [repmat(time_points,1,1,nparamsets), ones(size(time_points,1),2) .* norminv(noisePercnile,0,1).* noise]; 
+            %Why column size of 2?
         end
     end
 end
