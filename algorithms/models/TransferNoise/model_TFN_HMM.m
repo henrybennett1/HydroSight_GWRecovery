@@ -145,7 +145,7 @@ classdef model_TFN_HMM < model_TFN
             %transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
             %    obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
             %initalProbs = obj.parameters.Tprobs.initial;
-
+            
             nStates = size(transProbs,1);
             States = 1:nStates;
 
@@ -347,7 +347,6 @@ classdef model_TFN_HMM < model_TFN
                 & obj.inputData.head(:,1) <= time_points(end) );
             resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
             resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
-            %mean = h1 or h2, stdev = noise
             delta_time = [inf;obj.variables.delta_time];
             % Calculate innovations using residuals from the deterministic components.
             innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha .* delta_time(2:end) );
@@ -355,25 +354,34 @@ classdef model_TFN_HMM < model_TFN
             % at first timestep prior contributions is zero
             innov1 = [resid1(1);innov1];
             innov2 = [resid2(1);innov2];
-
-            %objFn_1 = pdf('Normal', resid1, 0, 10^obj.parameters.noise1.alpha);
-            %objFn_2 = pdf('Normal', resid2, 0, 10^obj.parameters.noise2.alpha);
+            
+            % obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
+            % obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
+            % objFn_1 = pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n);
+            % objFn_2 = pdf('Normal', resid2, 0, obj.parameters.noise2.sigma_n);
 
             % Calculate objective function (the probability that the model
             % produces the observed value)
 
             z1 = mean(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time));
-            z2 = mean(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time));
+            z2 = mean(1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time));
 
-            objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
-            objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;    
+            %objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
+            %objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;
+            objFn_1 = (innov1 .^ 2) ./ (1-exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* exp(z1);
+            objFn_2 = (innov2 .^ 2) ./ (1-exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* exp(z2);
+
             %Von Asmuth 2005 Paper, see Tim's 2014 paper
 
             % Calculate log liklihood    
 
-            N = size(resid1,1);
+            %N = size(resid1,1);
             %objFn_1 = -0.5 * N * ( log(2*pi) + log(objFn_1./N)+1);
             %objFn_2 = -0.5 * N * ( log(2*pi) + log(objFn_2./N)+1);
+            % The issue with the above is it produces a negative objective
+            % function, which results in a negative sumalpha value, which
+            % produces a log(negative number) = complex number, which screws
+            % it up
 
 
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
@@ -381,7 +389,6 @@ classdef model_TFN_HMM < model_TFN
             alpha = [obj.parameters.Tprobs.initial, 1-obj.parameters.Tprobs.initial] .* emissionProbs(1,:);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
             sumalpha = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
             lscale = log(sumalpha);
-            objFn = sumalpha;
             alpha = alpha / sumalpha;
 
             transProbs = [1-obj.parameters.Tprobs.trans_state1,obj.parameters.Tprobs.trans_state1;  ...
@@ -390,7 +397,6 @@ classdef model_TFN_HMM < model_TFN
                 alpha = (alpha * transProbs) .* emissionProbs(i,:);
                 sumalpha = sum(alpha);
                 lscale = lscale + log(sumalpha);
-                objFn = objFn + sumalpha;
                 alpha = alpha / sumalpha;
             end
             objFn=lscale;
@@ -471,11 +477,15 @@ classdef model_TFN_HMM < model_TFN
                 resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2,i);
                 resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2,i);
 
-                innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time(1:end) );
-                innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time(1:end) );
+                delta_time = [inf;obj.variables.delta_time];
+
+                innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha(i) .* delta_time(2:end) );
+                innov1 = [resid1(1);innov1];
+                innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha(i) .* delta_time(2:end) ); 
+                innov2 = [resid2(1);innov2];
                 
-                obj.parameters.noise1.alpha(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* obj.variables.delta_time ))));
-                obj.parameters.noise2.alpha(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* obj.variables.delta_time ))));
+                obj.parameters.noise1.sigma_n(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* delta_time ))));
+                obj.parameters.noise2.sigma_n(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* delta_time ))));
             end
 
             noise1 = getNoise(obj.parameters.noise1, time_points);
@@ -488,7 +498,7 @@ classdef model_TFN_HMM < model_TFN
 
             initalProbs = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial];
 
-            iStates = model_TFN_HMM.getViterbi(initalProbs, emissionProbs, transProbs);
+            iStates = model_TFN_HMM.getViterbi(initalProbs, emissionProbs', transProbs);
             obj.variables.viterbiStates = iStates;
 
             h_star = h_star1;
