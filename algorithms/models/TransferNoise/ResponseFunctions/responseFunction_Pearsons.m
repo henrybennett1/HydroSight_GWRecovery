@@ -138,7 +138,7 @@ classdef responseFunction_Pearsons < responseFunction_abstract
             if isfield(obj.settings,'params_upperPhysicalLimit')
                 params_upperLimit = obj.settings.params_upperPhysicalLimit;
             else
-                params_upperLimit = [inf; log10(-log(sqrt(eps()))); 2]; % last value is n. when 10^n ~>100 t_peak^(10^n) 0> inf.
+                params_upperLimit = [1; log10(-log(sqrt(eps()))); 2]; % last value is n. when 10^n ~>100 t_peak^(10^n) 0> inf.
             end
         end        
         

@@ -76,7 +76,7 @@ forcingTransform_Precip = {'transformfunction', 'climateTransform_soilMoistureMo
 % defined the soil model, we only need to specify the output we require.
 % Here we're selecting  'evap_gw_potential', which is the potential ET -
 % actual soil ET.
-forcingTransform_ET = {'transformfunction', 'climateTransform_soilMoistureModels'; ...
+forcingTransform_ET = {'transformfunction', 'climateTransform_soilMoistureModels_v2'; ...
                'outputdata', 'evap_gw_potential'};
 
 % Next we create a cell array for all of the model options. The column format is:            
@@ -108,8 +108,8 @@ modelOptions_6params = { 'precip','weightingfunction','responseFunction_Pearsons
 maxObsFreq = 7;
 
 % Select which model structures to build and calibrate.
-run6paramModel = false;
-run7paramModel = true;
+run6paramModel = true;
+run7paramModel = false;
 run9paramModel = false;
 
 % Define a model label
@@ -120,7 +120,7 @@ if run6paramModel
     model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
 
     % Set the number of SP-UCI calibration clusters per parameter
-    SchemeSetting.ngs = 2*13;
+    SchemeSetting.ngs = 6;
     %SchemeSetting.PopSize = 2*13;
     
     % Calibrate the 6 parameter model.

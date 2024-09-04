@@ -13,7 +13,7 @@ classdef noise < handle
     
     methods
         function obj = noise(timesteps)
-            obj.alpha = 1;
+            obj.alpha = log10(0.1);
             
 
             delta_time = diff(timesteps);

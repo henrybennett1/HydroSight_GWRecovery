@@ -204,7 +204,7 @@ classdef model_TFN_HMM < model_TFN
 
         end
         %% Calculate objective function vector.
-        function [objFn, h_star1, h_star2, colnames, drainage_elevation, emissionProbs, transProbs] = objectiveFunction(params, time_points, obj, varargin)
+        function [objFn, h_star1, h_star2, colnames, emissionProbs, transProbs] = objectiveFunction(params, time_points, obj, varargin)
             % objectiveFunction calculates the objective function vector.
             %
             % Syntax:
@@ -280,12 +280,12 @@ classdef model_TFN_HMM < model_TFN
             % % elevation and the mean forcing. Note, these inputs are only
             % % to be provided if not doing simulation.
             % getLikelihood = false;
-            drainage_elevation=[];
+            %drainage_elevation=[];
             mean_forcing=[];
             getLikelihood = false;
             if ~isempty(varargin)
                 if isstruct(varargin{1})
-                    drainage_elevation=varargin{1}.drainage_elevation;
+                    %drainage_elevation=varargin{1}.drainage_elevation;
                     mean_forcing=varargin{1}.mean_forcing;
                 elseif islogical(varargin{1})
                     getLikelihood=varargin{1};
@@ -301,9 +301,9 @@ classdef model_TFN_HMM < model_TFN
                 [h_star, colnames] = get_h_star(obj, time_points, mean_forcing);
             end
 
-            if isempty(drainage_elevation)
-                drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
-            end
+            % if isempty(drainage_elevation)
+            %     drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
+            % end
 
             % Increment count of function calls
             obj.variables.nobjectiveFunction_calls = obj.variables.nobjectiveFunction_calls +  size(params,2);
@@ -325,8 +325,7 @@ classdef model_TFN_HMM < model_TFN
             h_star2 = h_star;
             h_star2(:,2) = h_star(:,2) + obj.parameters.datum2.d;
 
-            objFn_1 = pdf('Normal', obj.inputData.head(:,2) - h_star1(:,2), 0, 10^obj.parameters.noise1.alpha);
-            objFn_2 = pdf('Normal', obj.inputData.head(:,2) - h_star2(:,2), 0, 10^obj.parameters.noise2.alpha);
+
             
             % if isempty(drainage_elevation)
             %     drainage_elevation = obj.variables.h_bar - mean(h_star(:,2));
@@ -357,19 +356,24 @@ classdef model_TFN_HMM < model_TFN
             innov1 = [resid1(1);innov1];
             innov2 = [resid2(1);innov2];
 
+            %objFn_1 = pdf('Normal', resid1, 0, 10^obj.parameters.noise1.alpha);
+            %objFn_2 = pdf('Normal', resid2, 0, 10^obj.parameters.noise2.alpha);
+
             % Calculate objective function (the probability that the model
             % produces the observed value)
 
-            % objFn_1 = sum(exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time) ))) ...
-            %     ./(1- exp( -2.*10.^obj.parameters.noise1.alpha .* delta_time )) .* innov1.^2);
-            % objFn_2 = sum(exp(mean(log( 1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time) ))) ...
-            %     ./(1- exp( -2.*10.^obj.parameters.noise2.alpha .* delta_time )) .* innov2.^2);    %Von Asmuth 2005 Paper, see Tim's 2014 paper
-            % %
-            % % Calculate log liklihood    
-            % 
-            % N = size(resid1,1);
-            % objFn_1 = -0.5 * N * ( log(2*pi) + log(objFn_1./N)+1);
-            % objFn_2 = -0.5 * N * ( log(2*pi) + log(objFn_2./N)+1);
+            z1 = mean(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time));
+            z2 = mean(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time));
+
+            objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
+            objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;    
+            %Von Asmuth 2005 Paper, see Tim's 2014 paper
+
+            % Calculate log liklihood    
+
+            N = size(resid1,1);
+            %objFn_1 = -0.5 * N * ( log(2*pi) + log(objFn_1./N)+1);
+            %objFn_2 = -0.5 * N * ( log(2*pi) + log(objFn_2./N)+1);
 
 
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
@@ -378,11 +382,10 @@ classdef model_TFN_HMM < model_TFN
             sumalpha = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
             lscale = log(sumalpha);
             objFn = sumalpha;
-            alpha = alpha / sumalpha;        %alpha(1) is reset to 1
+            alpha = alpha / sumalpha;
 
             transProbs = [1-obj.parameters.Tprobs.trans_state1,obj.parameters.Tprobs.trans_state1;  ...
                 obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
-%Check for NaN values and why?
             for i = 2:size(emissionProbs,2)
                 alpha = (alpha * transProbs) .* emissionProbs(i,:);
                 sumalpha = sum(alpha);
@@ -391,7 +394,6 @@ classdef model_TFN_HMM < model_TFN
                 alpha = alpha / sumalpha;
             end
             objFn=lscale;
-            %objFn_test1 = sum(objFn_1);
             if ~isfinite(objFn)
                 objFn = inf;
             end
@@ -459,7 +461,7 @@ classdef model_TFN_HMM < model_TFN
 
             % Run objective function to get data and num cols of h_star =
             % in case there's >1 parameter set.
-            [objFn(:,1), h_star1, h_star2, ~ , ~,emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
+            [objFn(:,1), h_star1, h_star2, ~ ,emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
 
             t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
                 & obj.inputData.head(:,1) <= time_points(end) );
@@ -553,7 +555,7 @@ classdef model_TFN_HMM < model_TFN
                               
                 % Add drainage elevation to the varargin variable sent to
                 % objectiveFunction.                
-                calibData(ii,1).drainage_elevation = obj.variables.d(ii);  
+                %calibData(ii,1).drainage_elevation = obj.variables.d(ii);  
                 % DRAINAGE ELEVATION ???
             end
             %ERROR, HEAD IS COMING OUT AS A SINGLE VALUE REPEATED
