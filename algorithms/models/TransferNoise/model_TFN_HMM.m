@@ -366,8 +366,8 @@ classdef model_TFN_HMM < model_TFN
             z1 = mean(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time));
             z2 = mean(1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time));
 
-            %objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
-            %objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;
+            % objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
+            % objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;
             objFn_1 = (innov1 .^ 2) ./ (1-exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* exp(z1);
             objFn_2 = (innov2 .^ 2) ./ (1-exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* exp(z2);
 
@@ -393,7 +393,7 @@ classdef model_TFN_HMM < model_TFN
 
             transProbs = [1-obj.parameters.Tprobs.trans_state1,obj.parameters.Tprobs.trans_state1;  ...
                 obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
-            for i = 2:size(emissionProbs,2)
+            for i = 2:size(emissionProbs,1)
                 alpha = (alpha * transProbs) .* emissionProbs(i,:);
                 sumalpha = sum(alpha);
                 lscale = lscale + log(sumalpha);
