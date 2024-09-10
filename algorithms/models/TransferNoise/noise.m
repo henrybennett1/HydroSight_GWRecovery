@@ -5,15 +5,14 @@ classdef noise < handle
     properties
         alpha
         sigma_n
-        params_upperLimit
-        params_lowerLimit   %Do we need these values here?
         variables
         
     end
     
     methods
         function obj = noise(timesteps)
-            obj.alpha = log10(0.1);
+            obj.alpha = 3;
+            obj.sigma_n = 0.1;
             
 
             delta_time = diff(timesteps);
@@ -27,16 +26,18 @@ classdef noise < handle
             %         break;
             %     end
             % end
-            % if alpha_upperLimit <= eps()
-            %     alpha_upperLimit = inf;
-            % else
-            %     % Transform alpha log10 space.
-            %     alpha_upperLimit = log10(alpha_upperLimit);
-            % end                           
+            if alpha_upperLimit <= eps()
+                alpha_upperLimit = inf;
+            else
+                % Transform alpha log10 space.
+                alpha_upperLimit = log10(alpha_upperLimit);
+            end                           
                         
 
-            obj.params_upperLimit =  alpha_upperLimit;
-            obj.params_lowerLimit = log10(sqrt(eps()))+4;
+            obj.variables.params_phys_upperLimit =  alpha_upperLimit+4;
+            obj.variables.params_phys_lowerLimit = log10(sqrt(eps()));
+            obj.variables.params_plaus_upperLimit =  alpha_upperLimit;
+            obj.variables.params_plaus_lowerLimit = log10(sqrt(eps()))+3;
             obj.variables.delta_time = delta_time;
             
         end
@@ -51,18 +52,19 @@ classdef noise < handle
 
         end
         function [params_upperLimit, params_lowerLimit] =  getParameters_plausibleLimit(obj)
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
+            params_upperLimit = obj.variables.params_plaus_upperLimit;
+            params_lowerLimit = obj.variables.params_plaus_lowerLimit;
         end
 
         function [params_upperLimit, params_lowerLimit] =  getParameters_physicalLimit(obj)
-            params_upperLimit = obj.params_upperLimit;
-            params_lowerLimit = obj.params_lowerLimit;
+            params_upperLimit = obj.variables.params_phys_upperLimit;
+            params_lowerLimit = obj.variables.params_phys_lowerLimit;
             %FIX and add to all others
         end  
 
-        function isValidParameter = getParameterValidity(obj, params, param_names)
+        function isValidParameter = getParameterValidity(obj, params, ~)
             [params_upperLimit, params_lowerLimit] = getParameters_physicalLimit(obj);
+
             isValidParameter = params >= params_lowerLimit(:,ones(1,size(params,2))) & ...
                     params <= params_upperLimit(:,ones(1,size(params,2)));
         end
