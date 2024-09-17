@@ -36,7 +36,8 @@ classdef noise < handle
                         
 
             obj.params_upperLimit =  alpha_upperLimit;
-            obj.params_lowerLimit = log10(sqrt(eps()))+4;
+            %obj.params_lowerLimit = log10(sqrt(eps()))+4;
+            obj.params_lowerLimit = -1;
             obj.variables.delta_time = delta_time;
             
         end

@@ -311,11 +311,9 @@ classdef model_TFN_HMM < model_TFN
             % Return of there are nan or inf value
             if any(isnan(h_star(:,2)) | isinf(h_star(:,2)))
                 if getLikelihood
-                    objFn_1 = -inf;
-                    objFn_2 = -inf;
+                    objFn = -inf;
                 else
-                    objFn_1 = inf;
-                    objFn_2 = inf;
+                    objFn = inf;
                 end
                 return;
             end
@@ -355,37 +353,27 @@ classdef model_TFN_HMM < model_TFN
             innov1 = [resid1(1);innov1];
             innov2 = [resid2(1);innov2];
             
-            % obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
-            % obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
-            % objFn_1 = pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n);
-            % objFn_2 = pdf('Normal', resid2, 0, obj.parameters.noise2.sigma_n);
+            obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
+            obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
+            objFn_1 = pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n);
+            objFn_2 = pdf('Normal', resid2, 0, obj.parameters.noise2.sigma_n);
 
             % Calculate objective function (the probability that the model
             % produces the observed value)
 
-            z1 = mean(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time));
-            z2 = mean(1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time));
+            z1 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time))));
+            z2 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time))));
 
+            % 
             % objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
             % objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;
-            objFn_1 = (innov1 .^ 2) ./ (1-exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* exp(z1);
-            objFn_2 = (innov2 .^ 2) ./ (1-exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* exp(z2);
-
+            % objFn_1 = exp(z1) ./ (1-exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* (innov1 .^ 2);
+            % objFn_2 = exp(z2) ./ (1-exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* (innov2 .^ 2);
             %Von Asmuth 2005 Paper, see Tim's 2014 paper
-
-            % Calculate log liklihood    
-
-            %N = size(resid1,1);
-            %objFn_1 = -0.5 * N * ( log(2*pi) + log(objFn_1./N)+1);
-            %objFn_2 = -0.5 * N * ( log(2*pi) + log(objFn_2./N)+1);
-            % The issue with the above is it produces a negative objective
-            % function, which results in a negative sumalpha value, which
-            % produces a log(negative number) = complex number, which screws
-            % it up
-
 
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
             emissionProbs = [objFn_1, objFn_2];
+            emissionProbs(emissionProbs == 0) = 10^-20;
             alpha = [obj.parameters.Tprobs.initial, 1-obj.parameters.Tprobs.initial] .* emissionProbs(1,:);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
             sumalpha = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
             lscale = log(sumalpha);
@@ -399,7 +387,7 @@ classdef model_TFN_HMM < model_TFN
                 lscale = lscale + log(sumalpha);
                 alpha = alpha / sumalpha;
             end
-            objFn=lscale;
+            objFn=-lscale;
             if ~isfinite(objFn)
                 objFn = inf;
             end
