@@ -99,7 +99,7 @@ modelOptions_7params = { 'precip','weightingfunction','responseFunction_Pearsons
                         'et','weightingfunction','derivedweighting_PearsonsNegativeRescaled'; ...
                         'et','inputcomponent','precip'; ...
                         'et','forcingdata',forcingTransform_ET};                    
-
+ 
 modelOptions_6params = { 'precip','weightingfunction','responseFunction_Pearsons'; ...
                         ['precip' ...
                         ''],'forcingdata',forcingTransform_Precip};                    
@@ -120,8 +120,8 @@ if run6paramModel
     model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
 
     % Set the number of SP-UCI calibration clusters per parameter
-    %SchemeSetting.ngs = 6;
-    SchemeSetting.PopSize = 2*12;
+    %SchemeSetting.ngs = 2*13;
+    SchemeSetting.PopSize = 4;
     
     % Calibrate the 6 parameter model.
     calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
@@ -143,7 +143,7 @@ end
 if run7paramModel
     % Build the 7 parameter model.
     model_7params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_7params);
-
+    
     % Set the number of SP-UCI calibration clusters per parameter
     SchemeSetting.ngs = 4;
     %SchemeSetting.PopSize = 2*13;

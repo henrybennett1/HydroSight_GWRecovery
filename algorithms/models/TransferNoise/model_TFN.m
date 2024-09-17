@@ -2297,7 +2297,7 @@ classdef model_TFN < model_abstract
                     params_upperLimit = [params_upperLimit; params_upperLimit_temp]; %#ok<AGROW> 
                     params_lowerLimit = [params_lowerLimit; params_lowerLimit_temp]; %#ok<AGROW> 
                                         
-                elseif strcmp(currentField, 'noise')
+                else
 
                     [params_plausibleUpperLimit, params_plausibleLowerLimit] = getParameters_plausibleLimit(obj);
                     

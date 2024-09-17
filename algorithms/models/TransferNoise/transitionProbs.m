@@ -30,11 +30,11 @@ classdef transitionProbs < handle
             initial2 = 1 - obj.initial;
         end
 
-        function [trans, maintain] = gettrans_probabilities(obj,state)
-            if state == 1
+        function [trans, maintain] = gettrans_probabilities(obj,iState)
+            if iState == 1
                 trans = obj.trans_state1;
                 maintain = 1 - obj.trans_state1;
-            elseif state == 2
+            elseif iState == 2
                 trans = obj.trans_state2;
                 maintain = 1 - obj.trans_state2;
             else
