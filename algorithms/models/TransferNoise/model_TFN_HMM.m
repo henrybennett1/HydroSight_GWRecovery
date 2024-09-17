@@ -102,6 +102,11 @@ classdef model_TFN_HMM < model_TFN
     % Author:
     %   Dr. Tim Peterson, The Department of Infrastructure Engineering,
     %   The University of Melbourne.
+    % Co-Authors:
+    %   Callum Cooper, Honours Student, Monash University Department of
+    %   Civil Engineering
+    %   Henry Bennett, Honours Student, Monash University Department of
+    %   Civil Engineering
     %
     % Date:
     %   26 Sept 2014
