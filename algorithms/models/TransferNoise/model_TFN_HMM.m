@@ -353,24 +353,28 @@ classdef model_TFN_HMM < model_TFN
             innov1 = [resid1(1);innov1];
             innov2 = [resid2(1);innov2];
             
-            obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
-            obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
-            objFn_1 = pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n);
-            objFn_2 = pdf('Normal', resid2, 0, obj.parameters.noise2.sigma_n);
+            usepdf = true;
 
+            if usepdf == true
+                obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
+                obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
+                objFn_1 = pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n);
+                objFn_2 = pdf('Normal', resid2, 0, obj.parameters.noise2.sigma_n);
+            else
             % Calculate objective function (the probability that the model
             % produces the observed value)
-
-            z1 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time))));
-            z2 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time))));
-
-            % 
-            % objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
-            % objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;
-            % objFn_1 = exp(z1) ./ (1-exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* (innov1 .^ 2);
-            % objFn_2 = exp(z2) ./ (1-exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* (innov2 .^ 2);
-            %Von Asmuth 2005 Paper, see Tim's 2014 paper
-
+                % z1 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time))));
+                % z2 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time))));
+                % objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
+                % objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;
+                % objFn_1 = exp(z1) ./ (1-exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* (innov1 .^ 2);
+                % objFn_2 = exp(z2) ./ (1-exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* (innov2 .^ 2);
+                %Von Asmuth 2005 Paper, see Tim's 2014 paper
+                stdev_1 = (mean(innov1.^2 ./ (1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)))).^0.5;
+                objFn_1 = 1 ./ stdev_1 .* ((exp(1) .* (1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* 2 .* pi)).^-0.5;
+                stdev_2 = (mean(innov2.^2 ./ (1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)))).^0.5;
+                objFn_2 = 1 ./ stdev_2 .* ((exp(1) .* (1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* 2 .* pi)).^-0.5;
+            end
             %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
             emissionProbs = [objFn_1, objFn_2];
             emissionProbs(emissionProbs == 0) = 10^-20;

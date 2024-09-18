@@ -19,7 +19,7 @@ classdef noise < handle
             delta_time = diff(timesteps);
 
             % This parameter is assumed to be the noise parameter 'alpha'.  
-            alpha_upperLimit = 5; 
+            alpha_upperLimit = 1; 
             % while abs(sum( exp( -2.*alpha_upperLimit .* delta_time ) )) < eps() ...
             % || exp(mean(log( 1- exp( -2.*alpha_upperLimit .* delta_time) ))) < eps()
             %     alpha_upperLimit = alpha_upperLimit - 0.01;
@@ -36,8 +36,8 @@ classdef noise < handle
                         
 
             obj.params_upperLimit =  alpha_upperLimit;
-            %obj.params_lowerLimit = log10(sqrt(eps()))+4;
-            obj.params_lowerLimit = -1;
+            obj.params_lowerLimit = log10(sqrt(eps()))+4;
+            %obj.params_lowerLimit = 0;
             obj.variables.delta_time = delta_time;
             
         end
