@@ -121,7 +121,7 @@ if run6paramModel
 
     % Set the number of SP-UCI calibration clusters per parameter
     %SchemeSetting.ngs = 6;
-    SchemeSetting.PopSize = 2*12;
+    SchemeSetting.PopSize = 4*12;
     
     % Calibrate the 6 parameter model.
     calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
