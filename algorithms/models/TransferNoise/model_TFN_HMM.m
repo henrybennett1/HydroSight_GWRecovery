@@ -567,7 +567,7 @@ classdef model_TFN_HMM < model_TFN
 
             h_star = h_star1 .* 0;
             noise = NaN(size(noise1));
-            displacement_values = NaN(size(noise));
+       
             % h_star(:,1:2,1) = h_star_tmp(:,1:2);
 
             iStates = obj.variables.viterbiStates;
@@ -576,12 +576,12 @@ classdef model_TFN_HMM < model_TFN
                 if iStates(i) == 1
                     h_star(i,:,:) = h_star1(i,:,:);
                     noise(i,:,:) = noise1(i,:,:);
-                    displacement_values(i,:,:) = obj.parameters.datum1.d;
+                    
 
                 elseif iStates(i) == 2
                     h_star(i,:,:) = h_star2(i,:,:);
                     noise(i,:,:) = noise2(i,:,:);
-                    displacement_values(i,:,:) = obj.parameters.datum2.d;
+                
                 end
 
             end
@@ -589,6 +589,43 @@ classdef model_TFN_HMM < model_TFN
             %head = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
             %    h_star(:,2,:) + noise(:,3,:)];
             head = h_star;
+            StateHead = [h_star iStates];
+            obj.variables.StateHead = StateHead;
+            
+            data_tmp_S1 = StateHead;
+            data_tmp_S2 = StateHead;
+            
+            
+            for i = 1:size(StateHead, 1)
+                
+                if data_tmp_S2(i, 3) == 1
+                    
+                    data_tmp_S2(i, 2) = NaN;
+                end
+            end
+            State2data = data_tmp_S2;
+            for i = 1:size(StateHead, 1)
+                
+                if data_tmp_S1(i, 3) == 2
+                    
+                    data_tmp_S1(i, 2) = NaN;
+                end
+            end
+            State1data = data_tmp_S1;
+            
+            x = (1:140);
+           
+            
+            figure()
+            head = getObservedHead(obj);
+            plot(x, head(:,2),'.-k', 'LineWidth',0.025,'MarkerSize',2 );
+           
+            hold on
+            plot(x, h_star(:,2),'.-b','LineWidth',0.025);
+            plot(x,State1data(:,2),"Marker",".","Color","b");    
+            plot(x,State2data(:,2),"Marker",".","Color",'r');
+            legend("Observed","Simulated","State One", "State Two");
+            hold off
 
             if nparamsets>1
                 head = cat(3, head, zeros(size(head,1),size(head,2), nparamsets-1));

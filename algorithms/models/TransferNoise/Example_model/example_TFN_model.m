@@ -28,6 +28,7 @@
 %clear all
 
 % Comment out the one bore ID that you DO NOT want to model.
+
 bore_ID = 'ID124705';
 
 if strcmp(bore_ID,'ID124705')
@@ -120,7 +121,7 @@ if run6paramModel
     model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
 
     % Set the number of SP-UCI calibration clusters per parameter
-    SchemeSetting.ngs = 4*12;
+    SchemeSetting.ngs = 4*9;
     
     % Calibrate the 6 parameter model.
     calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
@@ -190,3 +191,5 @@ if run9paramModel
     solveModel(model_9params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);    
     solveModelPlotResults(model_9params, simulationLabel, []);    
 end
+
+
