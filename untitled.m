@@ -20,7 +20,14 @@ for i = 2:length(years)
         j = j + 1;
     end
 end
+breakpoint = [breakpoint, length(years)];
+
+tempStruct = struct;
 
 for k = 1:(length(breakpoint)-1)
-    temp = boreDataWL(breakpoint(k):breakpoint(k+1),:);
+    % tempStruct(k).year = boreDataWL(breakpoint(k):breakpoint(k+1),1);
+    % tempStruct(k).month = boreDataWL(breakpoint(k):breakpoint(k+1),2);
+    % tempStruct(k).day = boreDataWL(breakpoint(k):breakpoint(k+1),3);
+    % tempStruct(k).idk = boreDataWL(breakpoint(k):breakpoint(k+1),4);
+    tempStruct(k).value = boreDataWL(breakpoint(k):breakpoint(k+1),5);
 end
