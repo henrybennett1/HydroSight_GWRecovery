@@ -14,7 +14,30 @@ for i = 1:length(list)
     filename = list{i};
     boreDataWL = readtable(['downloads/raw/' filename '_boreData.xlsx'],'ReadVariableNames',false); 
     forcingData = readtable(['downloads/raw/' filename '_ForcingData.csv'],'ReadVariableNames',false);
+    % Remove non AHD values
+    boreFilt = strcmp(boreDataWL{:,"Var6"}, 'Bore Water Level AHD');
+    boreDataWL = boreDataWL(boreFilt,:);
 
+    % Remove 0 values
+    boreFilt = logical(boreDataWL{:,"Var8"});
+    boreDataWL = boreDataWL(boreFilt,:);
+
+    % Remove negative values
+    boreFilt = logical((sign(boreDataWL{:,"Var8"})+1)/2);
+    boreDataWL = boreDataWL(boreFilt,:);
+
+    % Remove 99th percentile outliers
+    sigma = std(boreDataWL{:,"Var8"});
+    mu = mean(boreDataWL{:,"Var8"});
+    perc_99 = norminv(0.99,mu,sigma);
+    perc_01 = norminv(0.01,mu,sigma);
+   
+    boreFilt = boreDataWL{:,"Var8"} < perc_99;
+    boreDataWL = boreDataWL(boreFilt,:);
+    boreFilt = boreDataWL{:,"Var8"} > perc_01;
+    boreDataWL = boreDataWL(boreFilt,:);
+
+    % Defining the coordinates
     coords(i,:) = [str2double(filename), forcingData{1,1}, forcingData{1,2}];
 
     % This could probably be more 'elegant', but I'm just making it work
