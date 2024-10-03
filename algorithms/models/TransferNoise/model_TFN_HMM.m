@@ -356,8 +356,8 @@ classdef model_TFN_HMM < model_TFN
             usepdf = true;
 
             if usepdf == true
-                obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
-                obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
+                % obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
+                % obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
                 objFn_1 = pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n);
                 objFn_2 = pdf('Normal', resid2, 0, obj.parameters.noise2.sigma_n);
             else
@@ -476,8 +476,8 @@ classdef model_TFN_HMM < model_TFN
                 innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha(i) .* delta_time(2:end) ); 
                 innov2 = [resid2(1);innov2];
                 
-                obj.parameters.noise1.sigma_n(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* delta_time ))));
-                obj.parameters.noise2.sigma_n(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* delta_time ))));
+                % obj.parameters.noise1.sigma_n(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* delta_time ))));
+                % obj.parameters.noise2.sigma_n(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* delta_time ))));
             end
 
             noise1 = getNoise(obj.parameters.noise1, time_points);
@@ -586,9 +586,9 @@ classdef model_TFN_HMM < model_TFN
 
             end
 
-            %head = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
-            %    h_star(:,2,:) + noise(:,3,:)];
-            head = h_star;
+            head = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
+                h_star(:,2,:) + noise(:,3,:)];
+            
             StateHead = [h_star iStates];
             obj.variables.StateHead = StateHead;
             
@@ -614,11 +614,12 @@ classdef model_TFN_HMM < model_TFN
             State1data = data_tmp_S1;
             
             x = (1:140);
-           
+           %need to update to be a date set up rather than just hard coded
+           %values for the years
             
             figure()
-            head = getObservedHead(obj);
-            plot(x, head(:,2),'.-k', 'LineWidth',0.025,'MarkerSize',2 );
+            obs_Head = getObservedHead(obj);
+            plot(x, obs_Head(:,2),'.-k', 'LineWidth',0.025,'MarkerSize',2 );
            
             hold on
             plot(x, h_star(:,2),'.-b','LineWidth',0.025);
