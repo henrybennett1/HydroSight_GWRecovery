@@ -196,7 +196,8 @@ classdef model_TFN_HMM < model_TFN
             obj = obj@model_TFN(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin{1})    %The @ is here for inheritancy, so it will run model_TFN, and then run this
 
             obj.parameters = rmfield(obj.parameters,'noise');
-            obj.parameters.noise1 = noise(obsHead(:,1));
+            noiseUpperBounds = sqrt(var(obsHead(:,2))*0.25);
+            obj.parameters.noise1 = noise(obsHead(:,1),noiseUpperBounds);
             obj.parameters.noise2 = noise(obsHead(:,1));
             obj.parameters.datum1 = datum(obsHead);
             obj.parameters.datum2 = datum(obsHead);
@@ -619,13 +620,22 @@ classdef model_TFN_HMM < model_TFN
             
             figure()
             obs_Head = getObservedHead(obj);
-            plot(x, obs_Head(:,2),'.-k', 'LineWidth',0.025,'MarkerSize',2 );
+            t = obs_Head(:,1);
+            plot(t, obs_Head(:,2),'.-k', 'LineWidth',0.025,'MarkerSize',2 );
            
             hold on
-            plot(x, h_star(:,2),'.-b','LineWidth',0.025);
-            plot(x,State1data(:,2),"Marker",".","Color","b");    
-            plot(x,State2data(:,2),"Marker",".","Color",'r');
+            plot(t, h_star(:,2),'.-b','LineWidth',0.025);
+            plot(t,State1data(:,2),"Marker",".","Color","b");    
+            plot(t,State2data(:,2),"Marker",".","Color",'r');
             legend("Observed","Simulated","State One", "State Two");
+
+            tspan = min(t):1:max(t);
+            filt = day(tspan)==1 & month(tspan)==1;
+            tspan = tspan(filt);
+            yspan = year(tspan);
+            xticks(gca,tspan);
+            xticklabels(gca,yspan);
+
             hold off
 
             if nparamsets>1
