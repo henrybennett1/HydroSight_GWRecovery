@@ -196,9 +196,9 @@ classdef model_TFN_HMM < model_TFN
             obj = obj@model_TFN(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin{1})    %The @ is here for inheritancy, so it will run model_TFN, and then run this
 
             obj.parameters = rmfield(obj.parameters,'noise');
-            noiseUpperBounds = sqrt(var(obsHead(:,2))*0.25);
+            noiseUpperBounds = sqrt(var(obsHead(:,2))*0.5);
             obj.parameters.noise1 = noise(obsHead(:,1),noiseUpperBounds);
-            obj.parameters.noise2 = noise(obsHead(:,1));
+            obj.parameters.noise2 = noise(obsHead(:,1),noiseUpperBounds);
             obj.parameters.datum1 = datum(obsHead);
             obj.parameters.datum2 = datum(obsHead);
             obj.parameters.Tprobs = transitionProbs(0.6,0.4,0.2);
