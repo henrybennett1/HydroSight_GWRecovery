@@ -9,8 +9,8 @@ list = {'46854','47996','54925','56252','62427','62427','63740','64139','66622',
     '70921','75563','81957','82095','95076','98865','103344','104930','105287', ...
     '108944','110104','110166','110197','110738','111525','111530','111691','112236', ...
     '119429','141235'}';
-
-load("forcing_coords.mat");
+load("forcing_northingeasting.mat");
+load("bore_northingeasting.mat");
 
 residualMean = zeros(length(list),2);
 
@@ -26,11 +26,12 @@ for i = 1:length(list)
     forcingDataStruct.colnames = {'YEAR','MONTH','DAY','PRECIP','APET','RevegFrac'};
 
     bore_ID = convertStringsToChars("ID" + filename);
-
-    forcing_longitude = coords(i,2);
-    forcing_latitude = coords(i,3);
+    bore_n = bore_ne(i,2);
+    bore_e = bore_ne(i,3);
+    forcing_n = forcing_northingeasting(i,2);
+    forcing_e = forcing_northingeasting(i,3);
     
-    siteCoordinates = {bore_ID, 100, 100; 'PRECIP', 100, 100; 'APET', 100, 100; 'RevegFrac',602, 100}; %FIX
+    siteCoordinates = {bore_ID, bore_n, bore_e; 'PRECIP', forcing_n, forcing_e; 'APET', forcing_n, forcing_e; 'RevegFrac',forcing_n, forcing_e};
     
     forcingTransform_Precip = {'transformfunction', 'climateTransform_soilMoistureModels'; ...
                'forcingdata', {'precip','PRECIP';'et','APET'}; ...
@@ -86,8 +87,9 @@ for i = 1:length(list)
     solvedPlot_singleState = gca;
     saveas(gca,['downloads/plots/' filename '_solved1StatePlot.png']);
     residualMean(i,2) = model_6params.model.variables.residualMean;
+    close all;
 end
 
 save('downloads/plots/meanresiudals.mat',"residualMean");
 % Save a zip file of the plots as a back up that can more easily be moved
-zip('downloads\currentPlots.zip','downloads\plots');
+zip('currentPlots.zip','downloads\plots');
