@@ -1,4 +1,4 @@
-classdef model_TFN_HMM < model_TFN
+classdef model_TFN_HMM_2 < model_TFN
     % Class definition for Transfer Function Noise (TFN) model for use with HydroSight
     %
     % Description:
@@ -138,73 +138,22 @@ classdef model_TFN_HMM < model_TFN
                 '   - Shapoori V., Peterson T. J., Western A. W. and Costelloe J. F., (2015), Top-down groundwater hydrograph time series modeling for climate-pumping decomposition. Hydrogeology Journal'};
 
         end
-        %% VITERBI
-        function viterbiPath = getViterbi(initialProbs, emissionProbs, transProbs)
-            %need to use the emisison probs and trans probs
-            %time_points = obj.variables.time_points;
-            %transProbs = [obj.parameters.Tprobs.trans_state1,1-obj.parameters.Tprobs.trans_state1; ...
-            %    obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
-            %initalProbs = obj.parameters.Tprobs.initial;
-            
-            nStates = size(transProbs,1);
-            States = 1:nStates;
-
-            nTrial = size(emissionProbs,2);
-            v = NaN(nStates, nTrial);
-
-            for i = 1:nStates
-                v(i, 1) = log(initialProbs(i) * emissionProbs(i,1));
-            end
-
-            for k = 2:nTrial
-                for i = 1:nStates
-                    maxi = -Inf;
-                    for j = 1:nStates
-                        temp = v(j, k-1) + log(transProbs(j, i));
-                        maxi = max(maxi, temp);
-                    end
-                    v(i, k) = log(emissionProbs(i, k)) + maxi;
-                end
-            end
-
-            viterbiPath = NaN(nTrial, 1);
-            for i = 1:length(States)
-                if max(v(:, nTrial)) == v(i, nTrial)
-                    viterbiPath(nTrial) = States(i);
-                    break
-                end
-            end
-
-            for k = nTrial-1:-1:1
-                for i = 1:length(States)
-                    if max(v(:, k) + log(transProbs(:, viterbiPath(k+1)))) == ...
-                            (v(i, k) + log(transProbs(i, viterbiPath(k+1))))
-                        viterbiPath(k) = States(i);
-                        break
-                    end
-                end
-            end
-
-        end
     end
 
     %%  PUBLIC METHODS
     methods
 
         %% Model constructor
-        function obj = model_TFN_HMM(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin)
+        function obj = model_TFN_HMM_2(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin)
             obj = obj@model_TFN(bore_ID, obsHead, forcingData_data,  forcingData_colnames, siteCoordinates, varargin{1})    %The @ is here for inheritancy, so it will run model_TFN, and then run this
 
             obj.parameters = rmfield(obj.parameters,'noise');
             obj.parameters.noise1 = noise(obsHead(:,1));
-            obj.parameters.noise2 = noise(obsHead(:,1));
             obj.parameters.datum1 = datum(obsHead);
-            obj.parameters.datum2 = datum(obsHead);
-            obj.parameters.Tprobs = transitionProbs(0.6,0.4,0.2);
 
         end
         %% Calculate objective function vector.
-        function [objFn, h_star1, h_star2, colnames, emissionProbs, transProbs] = objectiveFunction(params, time_points, obj, varargin)
+        function [objFn, h_star1, colnames] = objectiveFunction(params, time_points, obj, varargin)
             % objectiveFunction calculates the objective function vector.
             %
             % Syntax:
@@ -320,8 +269,6 @@ classdef model_TFN_HMM < model_TFN
 
             h_star1 = h_star;
             h_star1(:,2) = h_star(:,2) + obj.parameters.datum1.d;
-            h_star2 = h_star;
-            h_star2(:,2) = h_star(:,2) + obj.parameters.datum2.d;
 
 
             
@@ -344,57 +291,15 @@ classdef model_TFN_HMM < model_TFN
             t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
                 & obj.inputData.head(:,1) <= time_points(end) );
             resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2);
-            resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2);
             delta_time = [inf;obj.variables.delta_time];
             % Calculate innovations using residuals from the deterministic components.
             innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha .* delta_time(2:end) );
-            innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha .* delta_time(2:end) );
             % at first timestep prior contributions is zero
             innov1 = [resid1(1);innov1];
-            innov2 = [resid2(1);innov2];
             
-            usepdf = true;
 
-            if usepdf == true
-                obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
-                obj.parameters.noise2.sigma_n = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha .* delta_time ))));
-                objFn_1 = pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n);
-                objFn_2 = pdf('Normal', resid2, 0, obj.parameters.noise2.sigma_n);
-            else
-            % Calculate objective function (the probability that the model
-            % produces the observed value)
-                % z1 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time))));
-                % z2 = exp(mean(log(1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time))));
-                % objFn_1 = ( (1 - exp((-2 * 10.^obj.parameters.noise1.alpha .* delta_time))) ./ (2 * pi * exp(1) * z1 * innov1.^2)) .^ 0.5;
-                % objFn_2 = ( (1 - exp((-2 * 10.^obj.parameters.noise2.alpha .* delta_time))) ./ (2 * pi * exp(1) * z2 * innov2.^2)) .^ 0.5;
-                % objFn_1 = exp(z1) ./ (1-exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* (innov1 .^ 2);
-                % objFn_2 = exp(z2) ./ (1-exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* (innov2 .^ 2);
-                %Von Asmuth 2005 Paper, see Tim's 2014 paper
-                stdev_1 = (mean(innov1.^2 ./ (1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)))).^0.5;
-                objFn_1 = 1 ./ stdev_1 .* ((exp(1) .* (1 - exp(-2 .* 10.^obj.parameters.noise1.alpha .* delta_time)) .* 2 .* pi)).^-0.5;
-                stdev_2 = (mean(innov2.^2 ./ (1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)))).^0.5;
-                objFn_2 = 1 ./ stdev_2 .* ((exp(1) .* (1 - exp(-2 .* 10.^obj.parameters.noise2.alpha .* delta_time)) .* 2 .* pi)).^-0.5;
-            end
-            %%CYCLE THROUGH FOR LOOP EACH TIMESTEP FOR THE LENGTH OF objFN
-            emissionProbs = [objFn_1, objFn_2];
-            emissionProbs(emissionProbs == 0) = 10^-20;
-            alpha = [obj.parameters.Tprobs.initial, 1-obj.parameters.Tprobs.initial] .* emissionProbs(1,:);       %DEFINING ALPHA FOR FIRST LOOP BASED ON INITIAL PROBABILITIES
-            sumalpha = sum(alpha);              %Alternatives include max(alpha1) and mean(alpha1)
-            lscale = log(sumalpha);
-            alpha = alpha / sumalpha;
-
-            transProbs = [1-obj.parameters.Tprobs.trans_state1,obj.parameters.Tprobs.trans_state1;  ...
-                obj.parameters.Tprobs.trans_state2,1-obj.parameters.Tprobs.trans_state2];
-            for i = 2:size(emissionProbs,1)
-                alpha = (alpha * transProbs) .* emissionProbs(i,:);
-                sumalpha = sum(alpha);
-                lscale = lscale + log(sumalpha);
-                alpha = alpha / sumalpha;
-            end
-            objFn=-lscale;
-            if ~isfinite(objFn)
-                objFn = inf;
-            end
+            obj.parameters.noise1.sigma_n = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha .* delta_time ))));
+            objFn = -sum(log(pdf('Normal', resid1, 0, obj.parameters.noise1.sigma_n)));
                 
         end
 
@@ -450,7 +355,6 @@ classdef model_TFN_HMM < model_TFN
             % Initialise data
             nparamSets = size(params,2);
             objFn = NaN(1,nparamSets);
-            %d = NaN(1,nparamSets);
             time_points = obj.variables.time_points;
             companantNames = fieldnames(obj.inputData.componentData);
             nCompanants = size(companantNames,1);
@@ -459,74 +363,42 @@ classdef model_TFN_HMM < model_TFN
 
             % Run objective function to get data and num cols of h_star =
             % in case there's >1 parameter set.
-            [objFn(:,1), h_star1, h_star2, ~ ,emissionProbs,transProbs] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
+            [objFn(:,1), h_star] = objectiveFunction(params(:,1), time_points, obj,useLikelihood);
 
             t_filt = find( obj.inputData.head(:,1) >=time_points(1)  ...
                 & obj.inputData.head(:,1) <= time_points(end) );
 
             for i=1:nparamSets
             %Calculate residual between observed and modelled.
-                resid1= obj.inputData.head(t_filt,2)  - h_star1(:,2,i);
-                resid2= obj.inputData.head(t_filt,2)  - h_star2(:,2,i);
+                resid1= obj.inputData.head(t_filt,2)  - h_star(:,2,i);
 
                 delta_time = [inf;obj.variables.delta_time];
 
                 innov1 = resid1(2:end) - resid1(1:end-1).*exp( -10.^obj.parameters.noise1.alpha(i) .* delta_time(2:end) );
                 innov1 = [resid1(1);innov1];
-                innov2 = resid2(2:end) - resid2(1:end-1).*exp( -10.^obj.parameters.noise2.alpha(i) .* delta_time(2:end) ); 
-                innov2 = [resid2(1);innov2];
                 
                 obj.parameters.noise1.sigma_n(i) = sqrt(mean( innov1.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise1.alpha(i) .* delta_time ))));
-                obj.parameters.noise2.sigma_n(i) = sqrt(mean( innov2.^2 ./ (1 - exp( -2 .* 10.^obj.parameters.noise2.alpha(i) .* delta_time ))));
             end
 
-            noise1 = getNoise(obj.parameters.noise1, time_points);
-            noise2 = getNoise(obj.parameters.noise2, time_points);
+            noise = getNoise(obj.parameters.noise1, time_points);
+
+            h_star = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
+                h_star(:,2,:) + noise(:,3,:)];
 
             for j=1:nCompanants
                 nvars(j) = size(obj.variables.(companantNames{j}).forcingData,2);
                 forcingMean(j,1:nvars(j),1) = mean(obj.variables.(companantNames{j}).forcingData,1);
             end
 
-            initalProbs = [obj.parameters.Tprobs.initial; 1-obj.parameters.Tprobs.initial];
-
-            iStates = model_TFN_HMM.getViterbi(initalProbs, emissionProbs', transProbs);
-            obj.variables.viterbiStates = iStates;
-
-            h_star = h_star1;
-            h_star(:,2) = h_star(:,2) .* 0;
-            noise = NaN(size(noise1));
-            displacement_values = NaN(size(noise));
-            % h_star(:,1:2,1) = h_star_tmp(:,1:2);
-
-            for i=1:length(iStates)
-                if iStates(i) == 1
-                    h_star(i,:,:) = h_star1(i,:,:);
-                    noise(i,:,:) = noise1(i,:,:);
-                    displacement_values(i,:,:) = obj.parameters.datum1.d;
-
-                elseif iStates(i) == 2
-                    h_star(i,:,:) = h_star2(i,:,:);
-                    noise(i,:,:) = noise2(i,:,:);
-                    displacement_values(i,:,:) = obj.parameters.datum2.d;
-                end
-            end
-
-            h_star = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
-                h_star(:,2,:) + noise(:,3,:)];
-
             for j=1:nCompanants
                 obj.variables.(companantNames{j}).forcingMean = forcingMean(j,1:nvars(j),:);
             end
-            obj.variables.residualMean = mean(abs(obj.inputData.head(t_filt,2)  - h_star(:,2)));
-            obj.variables.d = displacement_values;
+
+            obj.variables.residualMean = mean(abs(resid1));
+            obj.variables.d = obj.parameters.datum1.d;
             obj.variables.objFn = objFn;
             clear d objFn forcingMean
 
-            % Set model parameters (if params are multiple sets)
-            % if nparamSets>1
-            %     setParameters(obj, params, obj.variables.param_names);
-            % end
 
             % Set a flag to indicate that calibration is complete.
             obj.variables.doingCalibration = false;
@@ -539,7 +411,7 @@ classdef model_TFN_HMM < model_TFN
             end
         end
         %% Solve Function
-        function [head, colnames, noise] = solve(obj, time_points)
+        function [h_star, colnames, noise] = solve(obj, time_points)
             [params, param_names] = getParameters(obj);
             nparamsets = size(params,2);
 
@@ -554,78 +426,20 @@ classdef model_TFN_HMM < model_TFN
                 for j=1:nCompanants                    
                     calibData(ii,1).mean_forcing.(companants{j}) = obj.variables.(companants{j}).forcingMean(:,:,ii); %#ok<AGROW> 
                 end                
-                              
-                % Add drainage elevation to the varargin variable sent to
-                % objectiveFunction.                
-                %calibData(ii,1).drainage_elevation = obj.variables.d(ii);  
-                % DRAINAGE ELEVATION ???
             end
             %ERROR, HEAD IS COMING OUT AS A SINGLE VALUE REPEATED
-            [~, h_star1, h_star2, colnames] = objectiveFunction(params(:,1), time_points, obj, calibData(1)); %Check ~
-            noise1 = getNoise(obj.parameters.noise1, time_points);
-            noise2 = getNoise(obj.parameters.noise2, time_points);
-
-            h_star = h_star1 .* 0;
-            noise = NaN(size(noise1));
-       
-            % h_star(:,1:2,1) = h_star_tmp(:,1:2);
-
-            iStates = obj.variables.viterbiStates;
-
-            for i=1:length(iStates)
-                if iStates(i) == 1
-                    h_star(i,:,:) = h_star1(i,:,:);
-                    noise(i,:,:) = noise1(i,:,:);
-                    
-
-                elseif iStates(i) == 2
-                    h_star(i,:,:) = h_star2(i,:,:);
-                    noise(i,:,:) = noise2(i,:,:);
-                
-                end
-
-            end
-
-            head = [h_star(:,:,:), h_star(:,2,:) - noise(:,2,:), ...
-               h_star(:,2,:) + noise(:,3,:)];
-            %head = h_star;
-            StateHead = [h_star iStates];
-            obj.variables.StateHead = StateHead;
-            
-            data_tmp_S1 = StateHead;
-            data_tmp_S2 = StateHead;
-            
-            
-            for i = 1:size(StateHead, 1)
-                
-                if data_tmp_S2(i, 3) == 1
-                    
-                    data_tmp_S2(i, 2) = NaN;
-                end
-            end
-            State2data = data_tmp_S2;
-            for i = 1:size(StateHead, 1)
-                
-                if data_tmp_S1(i, 3) == 2
-                    
-                    data_tmp_S1(i, 2) = NaN;
-                end
-            end
-            State1data = data_tmp_S1;
+            [~, h_star,colnames] = objectiveFunction(params(:,1), time_points, obj, calibData(1)); %Check ~
+            noise = getNoise(obj.parameters.noise1, time_points);
            
             
             figure()
             head = getObservedHead(obj);
             t = head(:,1);
             plot(t, head(:,2),'.-k', 'LineWidth',0.025,'MarkerSize',2 );
-            % it used to be head = getObservedHead(obj), which may be
-            % causing the issues later down the line
+           
             hold on
-            plot(t, h_star(:,2),'.-b','LineWidth',0.025);
-            plot(t,State1data(:,2),"Marker",".","Color","b");    
-            plot(t,State2data(:,2),"Marker",".","Color",'r');
-            legend("Observed","Simulated","State One", "State Two");
-            %title('Calibrated 2 State Plot');
+            plot(t, h_star(:,2),'.-b','LineWidth',0.025); 
+            legend("Observed","Simulated");
 
             tspan = min(t):1:max(t);
             filt = day(tspan)==1 & month(tspan)==1;
@@ -636,10 +450,9 @@ classdef model_TFN_HMM < model_TFN
             hold off
 
             if nparamsets>1
-                head = cat(3, head, zeros(size(head,1),size(head,2), nparamsets-1));
+                h_star = cat(3, h_star, zeros(size(h_star,1),size(h_star,2), nparamsets-1));
                 parfor jj=2:size(params,2)
-                    [~, head(:,:,jj)] = objectiveFunction(params(:,jj), time_points, obj, calibData(jj));
-                    % THIS IS WRONG, THIS ONLY DRAWS h_star1
+                    [~, h_star(:,:,jj)] = objectiveFunction(params(:,jj), time_points, obj, calibData(jj));
                 end
             end
 
