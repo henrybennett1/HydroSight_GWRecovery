@@ -564,12 +564,12 @@ classdef model_TFN_HMM < model_TFN
             [~, h_star1, h_star2, colnames] = objectiveFunction(params(:,1), time_points, obj, calibData(1)); %Check ~
             noise1 = getNoise(obj.parameters.noise1, time_points);
             noise2 = getNoise(obj.parameters.noise2, time_points);
-
+            
             h_star = h_star1 .* 0;
             noise = NaN(size(noise1));
        
             % h_star(:,1:2,1) = h_star_tmp(:,1:2);
-
+            obj.variables.h_stars = [h_star1(:,1),h_star1(:,2),h_star2(:,2)];
             iStates = obj.variables.viterbiStates;
 
             for i=1:length(iStates)

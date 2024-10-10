@@ -1,20 +1,27 @@
 close all; clear; clc;
-set(groot,'defaultfigureposition',[0,0,1280,720]);
+set(groot,'defaultfigureposition',[0,0,2560,1440]);
 addpath(genpath("downloads"));
 addpath("downloads/raw/");
 addpath("downloads/cleaned/");
 addpath("downloads/plots/");
 
-list = {'46854','47996','54925','56252','62427','62427','63740','64139','66622', ...
-    '70921','75563','81957','82095','95076','98865','103344','104930','105287', ...
-    '108944','110104','110166','110197','110738','111525','111530','111691','112236', ...
+% list = {'46854','47996','54925','56252','62427','63740','64139','66622', ...
+%     '70921','75563','81957','82095','95076','98865','103344','104930','105287', ...
+%     '108944','110104','110166','110197','110738','111525','111530','111691','112236', ...
+%     '119429','141235'}';
+
+% crap, 56252, 62427, 63740, 70921, 82095
+list = {'47996','54925','56252','62427','63740','64139','66622', ...
+    '70921','81957','82095','98865','104930','105287', ...
+    '108944','110104','110197','110738','111525','111530','111691','112236', ...
     '119429','141235'}';
+
 load("forcing_northingeasting.mat");
 load("bore_northingeasting.mat");
 
 residualMean = zeros(length(list),2);
 
-for i = 1:length(list)
+for i = 1 %17:length(list)
     filename = list{i};
 
     load(filename + "_boreData.mat");
@@ -51,7 +58,7 @@ for i = 1:length(list)
     
     % HMM 2 State Model
     model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
-    SchemeSetting.ngs = 4*12;
+    SchemeSetting.ngs = 7*12;
     calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
     calibrateModelPlotResults(model_6params,[]);
     calibratedPlot_twoState = gca;
@@ -67,11 +74,12 @@ for i = 1:length(list)
     solvedPlot_twoState = gca;
     saveas(gca,['downloads/plots/' filename '_solved2StatePlot.png']);
     residualMean(i,1) = model_6params.model.variables.residualMean;
+    save(['downloads/plots/' filename '_model_6params_2.mat'],"model_6params");
     clear model_6params;
 
     % HMM 1 State Model
     model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM_2', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
-    SchemeSetting.ngs = 4*12;
+    SchemeSetting.ngs = 5*12;
     calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
     calibrateModelPlotResults(model_6params,[]);
     calibratedPlot_singleState = gca;
@@ -87,9 +95,10 @@ for i = 1:length(list)
     solvedPlot_singleState = gca;
     saveas(gca,['downloads/plots/' filename '_solved1StatePlot.png']);
     residualMean(i,2) = model_6params.model.variables.residualMean;
+    % save('downloads/plots/meanresiudals.mat',"residualMean");
     close all;
+    save(['downloads/plots/' filename '_model_6params_1.mat'],"model_6params");
 end
 
-save('downloads/plots/meanresiudals.mat',"residualMean");
 % Save a zip file of the plots as a back up that can more easily be moved
-zip('currentPlots.zip','downloads\plots');
+% zip('currentPlots.zip','downloads\plots');
