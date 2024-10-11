@@ -11,7 +11,7 @@ addpath("downloads/plots/");
 %     '119429','141235'}';
 
 % crap, 56252, 62427, 63740, 70921, 82095
-list = {'47996','54925','56252','62427','63740','64139','66622', ...
+list = {'46854','47996','54925','56252','62427','63740','64139','66622', ...
     '70921','81957','82095','98865','104930','105287', ...
     '108944','110104','110197','110738','111525','111530','111691','112236', ...
     '119429','141235'}';
@@ -53,33 +53,33 @@ for i = 1 %17:length(list)
                         ''],'forcingdata',forcingTransform_Precip};   
     maxObsFreq = 7;
 
-    % Build the 6 parameter model.
+    % % Build the 6 parameter model.
     modelLabel = bore_ID;
-    
-    % HMM 2 State Model
-    model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
-    SchemeSetting.ngs = 7*12;
-    calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
-    calibrateModelPlotResults(model_6params,[]);
-    calibratedPlot_twoState = gca;
-    saveas(gca,['downloads/plots/' filename '_calibratedPlot.png']);
-
-    time_points = model_6params.model.variables.time_points;
-    newForcingData = [];
-    simulationLabel = 'default simulation';
-    doKrigingOnResiduals = false;    
-
-    solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);
-    title([bore_ID ' Two-State Solved Plot']);
-    solvedPlot_twoState = gca;
-    saveas(gca,['downloads/plots/' filename '_solved2StatePlot.png']);
-    residualMean(i,1) = model_6params.model.variables.residualMean;
-    save(['downloads/plots/' filename '_model_6params_2.mat'],"model_6params");
-    clear model_6params;
+    % 
+    % % HMM 2 State Model
+    % model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
+    % SchemeSetting.ngs = 10*12;
+    % calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
+    % calibrateModelPlotResults(model_6params,[]);
+    % calibratedPlot_twoState = gca;
+    % saveas(gca,['downloads/plots/' filename '_calibratedPlot.png']);
+    % 
+    % time_points = model_6params.model.variables.time_points;
+    % newForcingData = [];
+    % simulationLabel = 'default simulation';
+    % doKrigingOnResiduals = false;    
+    % 
+    % solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);
+    % title([bore_ID ' Two-State Solved Plot']);
+    % solvedPlot_twoState = gca;
+    % saveas(gca,['downloads/plots/' filename '_solved2StatePlot.png']);
+    % residualMean(i,1) = model_6params.model.variables.residualMean;
+    % save(['downloads/plots/' filename '_model_6params_2.mat'],"model_6params");
+    % clear model_6params;
 
     % HMM 1 State Model
     model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM_2', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
-    SchemeSetting.ngs = 5*12;
+    SchemeSetting.ngs = 10*12;
     calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
     calibrateModelPlotResults(model_6params,[]);
     calibratedPlot_singleState = gca;
