@@ -8,10 +8,10 @@ list = {'46854','47996','54925','56252','62427','63740','64139','66622', ...
     '108944','110104','110166','110197','110738','111525','111530','111691','112236', ...
     '119429','141235'}';
 
-fourPlotsOneAxes = false;
+fourPlotsOneAxes = true;
 
 if fourPlotsOneAxes == true
-    for k = 2 %1:length(list)
+    for k = 5 %1:length(list)
         filename = list{k};
 
         % Load Single State model
@@ -78,13 +78,13 @@ if fourPlotsOneAxes == false
 
         dryIndex = model_6params.model.variables.StateHead;
         plot(time_steps, dryIndex(:,2),'.-b','LineWidth',0.025);
-        plot(time_steps, head_model1,'.-b','LineWidth',0.025);
 
         for j = 1:size(dryIndex, 1)
             if dryIndex(j, 3) == 1
                 dryIndex(j, 2) = NaN;
             end
         end
+        plot(time_steps(~isnan(dryIndex(:,2))), head_model1(~isnan(dryIndex(:,2))),'.-','Color',[0.3010 0.7450 0.9330],'LineWidth',0.025);
 
         plot(time_steps,dryIndex(:,2),"Marker",".","Color","r");
         tspan = min(time_steps):1:max(time_steps);
@@ -93,7 +93,7 @@ if fourPlotsOneAxes == false
         yspan = year(tspan);
         xticks(gca,tspan);
         xticklabels(gca,yspan);
-        title(['ID' filename]);
+        title(['ID' filename ' Two-State Solved Plot Comparing States After Switch']);
         legend('Observed Groundwater Head','Wet State','Modelled Wet State','Dry State');
         hold off
 
