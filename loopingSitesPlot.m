@@ -21,7 +21,7 @@ load("bore_northingeasting.mat");
 
 residualMean = zeros(length(list),2);
 
-for i = 1 %17:length(list)
+for i = 2 %17:length(list)
     filename = list{i};
 
     load(filename + "_boreData.mat");
@@ -55,49 +55,49 @@ for i = 1 %17:length(list)
 
     % % Build the 6 parameter model.
     modelLabel = bore_ID;
-    % 
-    % % HMM 2 State Model
-    % model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
+
+    % HMM 2 State Model
+    model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
+    SchemeSetting.ngs = 12*12;
+    calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
+    calibrateModelPlotResults(model_6params,[]);
+    calibratedPlot_twoState = gca;
+    saveas(gca,['downloads/plots/' filename '_calibratedPlot.png']);
+
+    time_points = model_6params.model.variables.time_points;
+    newForcingData = [];
+    simulationLabel = 'default simulation';
+    doKrigingOnResiduals = false;    
+
+    solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);
+    title([bore_ID ' Two-State Solved Plot']);
+    solvedPlot_twoState = gca;
+    saveas(gca,['downloads/plots/' filename '_solved2StatePlot.png']);
+    residualMean(i,1) = model_6params.model.variables.residualMean;
+    save(['downloads/plots/' filename '_model_6params_2.mat'],"model_6params");
+    clear model_6params;
+
+    % HMM 1 State Model
+    % model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM_2', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
     % SchemeSetting.ngs = 10*12;
     % calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
     % calibrateModelPlotResults(model_6params,[]);
-    % calibratedPlot_twoState = gca;
-    % saveas(gca,['downloads/plots/' filename '_calibratedPlot.png']);
+    % calibratedPlot_singleState = gca;
+    % saveas(gca,['downloads/plots/' filename '_calibratedPlot_singlestate.png']);
     % 
     % time_points = model_6params.model.variables.time_points;
     % newForcingData = [];
     % simulationLabel = 'default simulation';
     % doKrigingOnResiduals = false;    
     % 
-    % solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);
-    % title([bore_ID ' Two-State Solved Plot']);
-    % solvedPlot_twoState = gca;
-    % saveas(gca,['downloads/plots/' filename '_solved2StatePlot.png']);
-    % residualMean(i,1) = model_6params.model.variables.residualMean;
-    % save(['downloads/plots/' filename '_model_6params_2.mat'],"model_6params");
-    % clear model_6params;
-
-    % HMM 1 State Model
-    model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN_HMM_2', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
-    SchemeSetting.ngs = 10*12;
-    calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
-    calibrateModelPlotResults(model_6params,[]);
-    calibratedPlot_singleState = gca;
-    saveas(gca,['downloads/plots/' filename '_calibratedPlot_singlestate.png']);
-
-    time_points = model_6params.model.variables.time_points;
-    newForcingData = [];
-    simulationLabel = 'default simulation';
-    doKrigingOnResiduals = false;    
-    
-    solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);  
-    title([bore_ID ' One-State Solved Plot']);
-    solvedPlot_singleState = gca;
-    saveas(gca,['downloads/plots/' filename '_solved1StatePlot.png']);
-    residualMean(i,2) = model_6params.model.variables.residualMean;
-    % save('downloads/plots/meanresiudals.mat',"residualMean");
-    close all;
-    save(['downloads/plots/' filename '_model_6params_1.mat'],"model_6params");
+    % solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);  
+    % title([bore_ID ' One-State Solved Plot']);
+    % solvedPlot_singleState = gca;
+    % saveas(gca,['downloads/plots/' filename '_solved1StatePlot.png']);
+    % residualMean(i,2) = model_6params.model.variables.residualMean;
+    % % save('downloads/plots/meanresiudals.mat',"residualMean");
+    % close all;
+    % save(['downloads/plots/' filename '_model_6params_1.mat'],"model_6params");
 end
 
 % Save a zip file of the plots as a back up that can more easily be moved
