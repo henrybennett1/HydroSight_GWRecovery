@@ -11,7 +11,7 @@ list = {'46854','47996','54925','56252','62427','63740','64139','66622', ...
 fourPlotsOneAxes = true;
 
 if fourPlotsOneAxes == true
-    for k = 5 %1:length(list)
+    for k = 4%1:length(list)
         filename = list{k};
 
         % Load Single State model
@@ -20,6 +20,16 @@ if fourPlotsOneAxes == true
         head_obs = model_6params.model.inputData.head(:,2);
         time_steps_single = model_6params.simulationResults{1,1}.head(:,1);
         head_1 = model_6params.simulationResults{1,1}.head(:,2);
+
+        % if datum1 > datum2
+        %     wetState = 1;
+        %     dryState = 2;
+        % elseif datum2 > datum1
+        %     wetState = 2;
+        %     dryState = 1;
+        % else
+        %     error("Datum 1 or 2 either aren't defined or are equal");
+        % end
 
         clear model_6params;
 
@@ -55,6 +65,7 @@ if fourPlotsOneAxes == true
         xticklabels(gca,yspan);
         title(['ID' filename ' Two-State Solved Plot Compared to Single-State Solved Plot']);
         legend('Single State Model','Observed Groundwater Head','State 1','State 2');
+        fontsize(32,"points");
         hold off
 
         % ADD Additional h_stars from model_6params.model.variables.h_stars
@@ -95,6 +106,7 @@ if fourPlotsOneAxes == false
         xticklabels(gca,yspan);
         title(['ID' filename ' Two-State Solved Plot Comparing States After Switch']);
         legend('Observed Groundwater Head','Wet State','Modelled Wet State','Dry State');
+        fontsize(32,"points");
         hold off
 
         % ADD Additional h_stars from model_6params.model.variables.h_stars
