@@ -1,9 +1,11 @@
 close all; clear; clc;
 set(groot,'defaultfigureposition',[0,0,2560,1440]);
 addpath(genpath("downloads"));
-addpath("downloads/raw/");
 addpath("downloads/cleaned/");
 addpath("downloads/plots/");
+
+% Good Run, Bad Results
+% 47996
 
 list = {'46854','47996','54925','56252','62427','63740','64139','66622', ...
     '70921','75563','81957','82095','95076','98865','103344','104930','105287', ...
@@ -17,10 +19,11 @@ load("bore_northingeasting.mat");
 
 residualMean = zeros(length(list),2);
 
-two_stateMethod = true;
-single_stateMethod = true;
+two_stateMethod = false;
+single_stateMethod = false;
+originalMethod = true;
 
-for i = 2 %1:length(list)
+for i = 4 %1:length(list)
 
     filename = list{i};
 
@@ -98,6 +101,22 @@ for i = 2 %1:length(list)
         saveas(gca,['downloads/plots/' filename '_solved1StatePlot.png']);
         residualMean(i,2) = model_6params.model.variables.residualMean;
         save(['downloads/plots/' filename '_model_6params_1.mat'],"model_6params");
+    end
+
+    if originalMethod == true
+        % HMM 2 State Model
+        model_6params = HydroSightModel(modelLabel, bore_ID, 'model_TFN', boreDataWL, maxObsFreq, forcingDataStruct, siteCoordinates, modelOptions_6params);
+        SchemeSetting.ngs = 6*12;
+        calibrateModel(model_6params, [], 0, inf, 'SP-UCI', SchemeSetting);
+        calibrateModelPlotResults(model_6params,[]);
+
+        time_points = model_6params.model.variables.time_points;
+        newForcingData = [];
+        simulationLabel = 'default simulation';
+        doKrigingOnResiduals = false;
+
+        solveModel(model_6params, time_points, newForcingData, simulationLabel, doKrigingOnResiduals);
+        title([bore_ID ' Model_TFN Solved Plot']);
     end
     close all;
 end
