@@ -9,7 +9,7 @@ list = {'46854','47996','54925','56252','62427','63740','64139','66622', ...
     '108944','110104','110166','110197','110738','111525','111530','111691','112236', ...
     '119429','141235'}';
 
-AIC_values = NaN(length(list),3);
+AIC_values = NaN(length(list),4);
 
 for i = 1:length(list)
 
@@ -27,4 +27,11 @@ for i = 1:length(list)
     AIC_values(i,1) = filename;
     AIC_values(i,2) = aic;
     AIC_values(i,3) = aic_2;
+    if aic > aic_2
+        AIC_values(i,4) = 2;
+    elseif aic < aic_2
+        AIC_values(i,4) = 1;
+    elseif aic == aic_2
+        AIC_values(i,4) = 0;
+    end
 end
